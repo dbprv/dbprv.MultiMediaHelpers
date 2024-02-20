@@ -1,0 +1,17 @@
+section1:
+  var11: var11_value
+  var12: var12 value
+
+section2:
+  subsection3:
+    var21: var21_value
+    var22: var22 value
+
+TestEnv1: "{env:ProgramFiles}"
+
+TestEnv2:
+  Var1: "{env:PROCESSOR_IDENTIFIER}"
+
+TestEnv3: "{env1:ProgramFiles}"
+
+TestEnv4: "{ProgramFiles}"

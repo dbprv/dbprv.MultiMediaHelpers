@@ -1,0 +1,34 @@
+Cache:
+  Enabled: true
+  Dir: D:\pester\cache
+  #Expires: 0 ### seconds ### NOT IMPLEMENTED
+
+FileNameTokens:
+  DynamicRanges:
+    - SDR
+    - HDR
+  Codecs:
+    - H.265
+    - HEVC
+  Sources:
+    - WEB-DL
+    - BDRip
+    - UHDRemux
+    - BluRay
+  ExcludeSplit:
+    - H.265
+    - DD.5.1
+  Resolutions:
+    - 720p
+    - 1080p
+    - 2160p
+
+Kinopoisk:
+  ApiUrl: https://api.kinopoisk.dev/v1.4
+  ApiKey: "{env:KINOPOISK_API_KEY}"
+
+VideoFilesExtensions:
+  - mkv
+  - mp4
+  - ts
+  - avi

@@ -1,0 +1,23 @@
+Cache:
+  Enabled: true
+  Dir: D:\pester\cache
+
+FileNameTokens:
+  DynamicRanges:
+    - SDR
+    - HDR
+  Codecs:
+    - H.265
+    - HEVC
+  Sources:
+    - WEB-DL
+    - BDRip
+    - UHDRemux
+    - BluRay
+  ExcludeSplit:
+    - H.265
+    - DD.5.1
+  Resolutions:
+    - 720p
+    - 1080p
+    - 2160p

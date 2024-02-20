@@ -1,0 +1,4 @@
+Cache:
+  Enabled: true
+  Dir: D:\pester\cache
+

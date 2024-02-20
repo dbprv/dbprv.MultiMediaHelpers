@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<movie>
+    <title>The Fifth Element</title>
+    <originaltitle>The Fifth Element</originaltitle>
+    <ratings>
+        <rating name="imdb" max="10" default="true">
+            <value>7.600000</value>
+            <votes>471131</votes>
+        </rating>
+        <rating name="themoviedb" max="10">
+            <value>7.516000</value>
+            <votes>9170</votes>
+        </rating>
+        <rating name="trakt" max="10">
+            <value>8.224350</value>
+            <votes>22786</votes>
+        </rating>
+    </ratings>
+    <userrating>9</userrating>
+    <top250>0</top250>
+    <outline></outline>
+    <plot>In 2257, a taxi driver is unintentionally given the task of saving a young girl who is part of the key that will ensure the survival of humanity.</plot>
+    <tagline>There is no future without it.</tagline>
+    <runtime>125</runtime>
+    <thumb spoof="" cache="" aspect="poster" preview="">https://assets.fanart.tv/fanart/movies/18/movieposter/the-fifth-element-5cd19222eba01.jpg</thumb>
+    <thumb spoof="" cache="" aspect="landscape" preview="">https://assets.fanart.tv/fanart/movies/18/moviethumb/the-fifth-element-5cfbfe6a9fe7f.jpg</thumb>
+    <thumb spoof="" cache="" aspect="clearlogo" preview="">https://assets.fanart.tv/fanart/movies/18/hdmovielogo/the-fifth-element-505151cfaeece.png</thumb>
+    <thumb spoof="" cache="" aspect="clearart" preview="">https://assets.fanart.tv/fanart/movies/18/hdmovieclearart/the-fifth-element-54110ff055e7a.png</thumb>
+    <thumb spoof="" cache="" aspect="keyart" preview="">https://assets.fanart.tv/fanart/movies/18/movieposter/the-fifth-element-540d76d065310.jpg</thumb>
+    <thumb spoof="" cache="" aspect="discart" preview="">https://assets.fanart.tv/fanart/movies/18/moviedisc/the-fifth-element-512bfd3b590b1.png</thumb>
+    <thumb spoof="" cache="" aspect="banner" preview="">https://assets.fanart.tv/fanart/movies/18/moviebanner/the-fifth-element-535fb3fbda854.jpg</thumb>
+    <fanart>
+        <thumb colors="" preview="https://assets.fanart.tv/preview/movies/18/moviebackground/the-fifth-element-552537c2eb450.jpg">https://assets.fanart.tv/fanart/movies/18/moviebackground/the-fifth-element-552537c2eb450.jpg</thumb>
+        <thumb colors="" preview="https://image.tmdb.org/t/p/w780/dwN0kPGrLbFRxyL3F3J3t4ShQx.jpg">https://image.tmdb.org/t/p/original/dwN0kPGrLbFRxyL3F3J3t4ShQx.jpg</thumb>
+    </fanart>
+    <mpaa>Australia:PG</mpaa>
+    <playcount>5</playcount>
+    <lastplayed>2023-01-25</lastplayed>
+    <id>18</id>
+    <uniqueid type="imdb">tt0119116</uniqueid>
+    <uniqueid type="tmdb" default="true">18</uniqueid>
+    <genre>Science Fiction</genre>
+    <country>France</country>
+    <country>United Kingdom</country>
+    <tag>BluRay</tag>
+    <credits>Luc Besson</credits>
+    <credits>Robert Mark Kamen</credits>
+    <director>Luc Besson</director>
+    <premiered>1997-05-02</premiered>
+    <year>1997</year>
+    <status></status>
+    <code></code>
+    <aired></aired>
+    <studio>Columbia Pictures</studio>
+    <trailer>Fifth Element The (1997)-trailer.m2ts</trailer>
+    <fileinfo>
+        <streamdetails>
+            <video>
+                <codec>h264</codec>
+                <aspect>1.777778</aspect>
+                <width>1920</width>
+                <height>1080</height>
+                <durationinseconds>7553</durationinseconds>
+                <stereomode></stereomode>
+                <hdrtype></hdrtype>
+            </video>
+            <audio>
+                <codec>truehd</codec>
+                <language>eng</language>
+                <channels>6</channels>
+            </audio>
+            <audio>
+                <codec>ac3</codec>
+                <language></language>
+                <channels>6</channels>
+            </audio>
+            <subtitle>
+                <language>eng</language>
+            </subtitle>
+        </streamdetails>
+    </fileinfo>
+    <actor>
+        <name>Bruce Willis</name>
+        <role>Korben Dallas</role>
+        <order>0</order>
+        <thumb>https://image.tmdb.org/t/p/original/caX3KtMU42EP3VLRFFBwqIIrch5.jpg</thumb>
+    </actor>
+    <actor>
+        <name>Milla Jovovich</name>
+        <role>Leeloo</role>
+        <order>1</order>
+        <thumb>https://image.tmdb.org/t/p/original/usWnHCzbADijULREZYSJ0qfM00y.jpg</thumb>
+    </actor>
+    <actor>
+        <name>Gary Oldman</name>
+        <role>Jean-Baptiste Emmanuel Zorg</role>
+        <order>2</order>
+        <thumb>https://image.tmdb.org/t/p/original/2v9FVVBUrrkW2m3QOcYkuhq9A6o.jpg</thumb>
+    </actor>
+    <resume>
+        <position>0.000000</position>
+        <total>0.000000</total>
+    </resume>
+    <dateadded>2018-03-31 12:31:10</dateadded>
+</movie>

@@ -1,0 +1,13 @@
+*.log
+*.bak
+*.tmp
+*.TempPoint.ps1
+*.TempPoint.psm1
+*.TempPoint.psd1
+_Notes.txt
+robocopy.txt
+bak/
+backup/
+_Notes.txt
+
+publish/
