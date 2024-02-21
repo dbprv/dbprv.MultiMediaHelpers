@@ -52,11 +52,15 @@ function Find-KinopoiskMovie {
   
   process {
     Write-Verbose "Find-KinopoiskMovie: Name: '$Name'"
-    Invoke-KinopoiskRequest -Url 'movie/search' -Query @{
-      page  = 1
-      limit = 10
-      query = $Name
-      #      type = 'movie' ### not work
-    } | select -ExpandProperty docs | ? { $_.type -eq 'movie' }
+    Invoke-KinopoiskRequest -Url "movie/search?page=1&limit=10&query=$([URI]::EscapeUriString($Name))" `
+    | select -ExpandProperty docs | ? { $_.type -eq 'movie' }
+    
+    ### !В PS5, PS7 разный порядок, из-за этого разный URL и ключ кэша:
+    #    Invoke-KinopoiskRequest -Url 'movie/search' -Query @{
+    #      page  = 1
+    #      limit = 10
+    #      query = $Name
+    #      #      type = 'movie' ### not work
+    #    } | select -ExpandProperty docs | ? { $_.type -eq 'movie' }
   }
 }

@@ -108,6 +108,12 @@ function Get-Config {
   
   Write-Verbose "Get-Config: begin"
   if (!$script:config) {
+    
+    if (!(Get-Module 'powershell-yaml' -ListAvailable)) {
+      Install-Module 'powershell-yaml' -Force -ErrorAction 'Stop' -SkipPublisherCheck
+    }
+#    Import-Module 'powershell-yaml' -ErrorAction 'Stop' -DisableNameChecking    
+    
     Write-Verbose "Get-Config: read config '$Path'"
     $Path = (Resolve-Path $Path).Path
     Import-Module powershell-yaml -ea Stop

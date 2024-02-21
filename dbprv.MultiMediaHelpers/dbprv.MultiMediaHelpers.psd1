@@ -12,7 +12,7 @@
 RootModule = 'dbprv.MultiMediaHelpers.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.1'
+ModuleVersion = '1.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -51,7 +51,9 @@ Description = 'Various functions for working with multimedia files'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+#RequiredModules = @(
+#  'powershell-yaml'
+#)
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()

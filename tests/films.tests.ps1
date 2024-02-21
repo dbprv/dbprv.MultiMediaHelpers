@@ -36,7 +36,8 @@ Describe 'Parse-FileName' {
 
 Describe 'Create-KodiMoviesNfo' {
   It 'folder: [<folder>], limit: [<limit>]' -ForEach @(
-    @{ folder = 'H:\Video\Фильмы'; limit = 3 }
+   @{ folder = 'H:\Video\Фильмы'; limit = 333 }
+    # @{ folder = 'H:\Video\Фильмы2'; limit = 3 }
   ) {
     $result = Create-KodiMoviesNfo -Folder $folder -Limit $limit
     Write-Verbose "Result: [$result]"

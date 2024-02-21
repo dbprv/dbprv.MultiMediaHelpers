@@ -32,6 +32,7 @@ $kodi_nfo_template = @"
 </movie>
 "@
 
+#??? tagline = shortDescription !!! ломает сканирование
 
 ### Functions:
 
@@ -133,7 +134,23 @@ function Export-KodiNfo {
   $doc.originaltitle = $kp_info.alternativeName
   $doc.year = [string]$kp_info.year
   $doc.plot = $kp_info.description
-  $doc.mpaa = "$($kp_info.ratingMpaa)"
+  
+  # ??? tagline = shortDescription !!! ломает сканирование
+  #  $doc.tagline = $kp_info.shortDescription
+  
+  $age_ratings = @()
+  if ($kp_info.ageRating) {
+    $age_ratings += "$($kp_info.ageRating)+"
+  }
+  if ($kp_info.ratingMpaa) {
+    $age_ratings += "$($kp_info.ratingMpaa)".ToUpper()
+  }
+  $doc.mpaa = $age_ratings -join ' / '
+  
+  #  $doc.mpaa = "$($kp_info.ratingMpaa)".ToUpper()
+  #  if ($kp_info.ageRating) {
+  #    $doc.mpaa = "$($kp_info.ageRating)+" + " / " + $doc.mpaa
+  #  }
   
   ### Ratings
     <#
@@ -161,6 +178,10 @@ function Export-KodiNfo {
     $rating_node.AppendChild($xml.CreateElement("votes")).InnerText = ("{0:f0}" -f $kp_info.votes.imdb).Replace(',', '.')
   }
   
+  #  if ($kp_info.top250) {
+  #    $doc.AppendChild($xml.CreateElement("top250")).InnerText = $kp_info.top250
+  #  }
+  
   ### Images
   #  <thumb spoof="" cache="" aspect="poster" preview="">https://assets.fanart.tv/fanart/movies/18/movieposter/the-fifth-element-5cd19222eba01.jpg</thumb>
   #  <thumb spoof="" cache="" aspect="landscape" preview="">https://assets.fanart.tv/fanart/movies/18/moviethumb/the-fifth-element-5cfbfe6a9fe7f.jpg</thumb>
@@ -173,31 +194,63 @@ function Export-KodiNfo {
   ### Poster
   $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
   $node.SetAttribute('aspect', 'poster')
+  $node.SetAttribute('preview', $kp_info.poster.previewUrl)
   $node.InnerText = $kp_info.poster.url
-  #  $node.InnerText = $KinopoiskInfo.poster.previewUrl
   
   ### Landscape
   $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
   $node.SetAttribute('aspect', 'landscape')
+  $node.SetAttribute('preview', $kp_info.backdrop.previewUrl)
   $node.InnerText = $kp_info.backdrop.url
   
   ### Logo
   $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
   $node.SetAttribute('aspect', 'clearlogo')
+  #  $node.SetAttribute('preview', $kp_info.logo.previewUrl)
   $node.InnerText = $kp_info.logo.url
   
+  ### Для View: Media info
+  # ???
+  #  <fanart>
+  #  <thumb colors="" preview="https://image.tmdb.org/t/p/w780/ABJOcPC4SFzyaRpYOvRtHKiSbX.jpg">https://image.tmdb.org/t/p/original/ABJOcPC4SFzyaRpYOvRtHKiSbX.jpg</thumb>
+  #  </fanart>
+  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("fanart"))
+  $thumb_node = [Xml.XmlElement]$node.AppendChild($xml.CreateElement("thumb"))
+  $thumb_node.SetAttribute('preview', $kp_info.backdrop.previewUrl)
+  $thumb_node.InnerText = $kp_info.backdrop.url
+  
+  # ???
+  #  <art>
+  #  <fanart>https://image.tmdb.org/t/p/original/ABJOcPC4SFzyaRpYOvRtHKiSbX.jpg</fanart>
+  #  <poster>https://image.tmdb.org/t/p/original/tXl4LcgFAjDvD17ThWEabfAVNVY.jpg</poster>
+  #  <thumb>image://video@%2fstorage%2fCOMP19%2fVideo%2fDisk_H%2f%d0%a0%d0%be%d1%81%d1%81%d0%b8%d1%8f%2fTelekinez.2023.WEB-DL.1080p.ELEKTRI4KA.UNIONGANG.mkv/</thumb>
+  #  </art>
+  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("art"))
+  $node.AppendChild($xml.CreateElement("fanart")).InnerText = $kp_info.backdrop.url
+  $node.AppendChild($xml.CreateElement("poster")).InnerText = $kp_info.poster.url
+  
+  
   ### IDs
-  #  <uniqueid type="imdb">tt0119116</uniqueid>
-  #  <uniqueid type="tmdb" default="true">18</uniqueid>
-  if ($kp_info.externalId.imdb) {
-    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
-    $node.SetAttribute('type', 'imdb')
-    $node.InnerText = $kp_info.externalId.imdb
-  }
+  #  if ($kp_info.externalId.imdb) {
+  #    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
+  #    $node.SetAttribute('type', 'imdb')
+  #    $node.InnerText = $kp_info.externalId.imdb
+  #  }
   
   $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
   $node.SetAttribute('type', 'kinopoisk')
+  #  $node.SetAttribute('default', 'true')
   $node.InnerText = $kp_info.id
+  
+  #  <uniqueid type="imdb">tt0119116</uniqueid>
+  #  <uniqueid type="tmdb" default="true">18</uniqueid>
+  $kp_info.externalId.psobject.Properties.GetEnumerator() | % {
+    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
+    $node.SetAttribute('type', $_.Name)
+    $node.InnerText = $_.Value
+  }
+  
+  
   
   ### Genres
   #  <genre>Science Fiction</genre>
@@ -360,5 +413,9 @@ function Create-KodiMoviesNfo {
       }
     }
   }
+  
+  Write-Host "`r`n === TOTALS ==="
+  Write-Host "Processed files: $($ok.Count)" -ForegroundColor Green
+  Write-Host "Not processed files: $($err.Count)" -ForegroundColor Red
   
 }
