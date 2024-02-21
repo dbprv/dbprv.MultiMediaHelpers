@@ -2,6 +2,11 @@
 
 Powershell module with various functions for working with multimedia files.
 
+## Links
+
+- https://github.com/dbprv/dbprv.MultiMediaHelpers
+- https://www.powershellgallery.com/packages/dbprv.MultiMediaHelpers
+
 ## Functions
 
 ### Create-KodiMoviesNfo
