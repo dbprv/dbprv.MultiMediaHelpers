@@ -2,6 +2,7 @@
 
 ### Includes:
 . "$PSScriptRoot\common.ps1"
+. "$PSScriptRoot\text.ps1"
 
 if (0) {
   . "$PSScriptRoot\kinopoisk.ps1"
@@ -66,7 +67,7 @@ function Parse-FileName {
     } elseif ($_ -in $media_params.ExcludeSplit) {
       $_
     } else {
-      $_ -split '\.' | % { "$_".Trim() } | ? { $_ }
+      $_ -split '[._]' | % { "$_".Trim() } | ? { $_ }
     }
   } | % { "$_".Trim() } | ? { $_ } | % {
     if ($_.StartsWith('[')) {
@@ -81,6 +82,7 @@ function Parse-FileName {
       }
     }
   } | % {
+    Write-Verbose "Process token '$_'"
     
     if (!$film_name_done) {
       if (($_.Value -notmatch '^\d{4}$') -and (!$_.Bracket)) {
@@ -93,7 +95,7 @@ function Parse-FileName {
         $film_name_done = $true
       }
       
-    } elseif ($_.Value -match '^\d{4}$') {
+    } elseif (($_.Value -match '^\d{4}$') -and (!$result.Year)) {
       $result.Year = $_.Value
     } elseif ($_.Value -in $media_params.Resolutions) {
       $result.Resolution = $_.Value
@@ -279,7 +281,8 @@ function Create-KodiMoviesNfo {
   param (
     [Parameter(Mandatory = $true)]
     [string]$Folder,
-    [int]$Limit = [int]::MaxValue
+    [int]$Limit = [int]::MaxValue,
+    [string[]]$CountriesAny
   )
   
   Write-Host "Create-KodiMoviesNfo: begin"
@@ -297,9 +300,12 @@ function Create-KodiMoviesNfo {
     Write-Host "Create-KodiMoviesNfo: process file '$($file.FullName)'"
     
     $parsed_info = $null
-    $kp_info_all = @()
+    #    $kp_info_all = @()
     $success = $false
     $message = ""
+    $parsed_name_translit = ""
+    #    $kp_info = $null
+    $kp_find_result = $null
     
     [FilmInfo]$parsed_info = Parse-FileName $file.Name
     
@@ -309,60 +315,25 @@ function Create-KodiMoviesNfo {
         
         Write-Host "Create-KodiMoviesNfo: Parsed file name:`r`n$(($parsed_info | fl * -Force | Out-String).Trim())`r`n" -fo Cyan
         
-        $kp_info_all = @(Find-KinopoiskMovie -Name $parsed_info.Name)
-        if ($kp_info_all) {
-          Write-Host "Found movie(s) at Kinopoisk:`r`n$($kp_info_all | select id, name, alternativeName, type, year | ft -AutoSize | Out-String)" -fo Cyan
-          
-          $kp_info = $null
-          
-          ### Найден только 1 фильм:
-          if ($kp_info_all.Length -eq 1) {
-            $kp_info = $kp_info_all[0]
-            
-          } else {
-            
-            ### Ищем по году +-1:            
-            if ($parsed_info.Year) {
-              $parsed_year = [int]($parsed_info.Year)
-              #              Write-Host "parsed_year[$($parsed_year.GetType())]: [$parsed_year]" -fo Cyan
-              $years = @($parsed_year, ($parsed_year - 1), ($parsed_year + 1)) ### !!! скобки обязательно
-              #              Write-Host "years[$($years.GetType())]: [$years]" -fo Cyan
-              foreach ($year in $years) {
-                Write-Host "Find by year $year" -fo Cyan
-                $delta = $year - $parsed_year
-                $delta_msg = if ($delta) { " ($('{0:+#;-#;0}' -f $delta))" } else { '' }
-                $kp_info_year = @($kp_info_all | ? { $_.year -eq $year })
-                if ($kp_info_year) {
-                  if ($kp_info_year.Length -eq 1) {
-                    $message = "Found movie by year $year$delta_msg"
-                    Write-Host "Create-KodiMoviesNfo: $message" -fo Green
-                    $kp_info = $kp_info_year[0]
-                    break
-                  } else {
-                    $message = "Found multiple by year $year$delta_msg, select 1st"
-                    Write-Host "Create-KodiMoviesNfo: $message" -fo Green
-                    $kp_info = $kp_info_year[0]
-                    break
-                  }
-                }
-              }
-              
-            } else {
-              throw "NOT IMPLEMENTED: no year"
-            }
-            
-          }
-          
-          if ($kp_info) {
-            Export-KodiNfo -VideoFilePath $file.FullName -kp_info $kp_info
-            $success = $true
-            
-          } else {
-            throw "Can not find movie in Kinopoisk results"
-          }
-          
+        $kp_find_result = Find-KinopoiskMovieSingle -Name $parsed_info.Name `
+                                                    -Year $parsed_info.Year `
+                                                    -CountriesAny $CountriesAny
+        
+        ### Если не нашли, пробуем транслитеровать имя eng->rus и искать снова:
+        if (!$kp_find_result.Success) {
+          $parsed_name_translit = Translit-EngToRus $parsed_info.Name
+          $kp_find_result = Find-KinopoiskMovieSingle -Name $parsed_name_translit `
+                                                      -Year $parsed_info.Year `
+                                                      -CountriesAny $CountriesAny
+        }
+        
+        if ($kp_find_result.Success) {
+          #          $kp_info = $kp_find_result.Result
+          Export-KodiNfo -VideoFilePath $file.FullName -KinopoiskInfo $kp_find_result.Result
+          $success = $true
         } else {
           throw "Can not find movie at Kinopoisk: '$($parsed_info.Name)'"
+          #          throw "Can not find movie in Kinopoisk results"
         }
         
       } else {
@@ -375,14 +346,18 @@ function Create-KodiMoviesNfo {
     }
     
     $stat.Add([PSCustomObject][ordered]@{
-        Success          = $success
-        FilePath         = $file.FullName
-        ParsedName       = $parsed_info.Name
-        ParsedYear       = $parsed_info.Year
-        KinopoiskFound   = $kp_info_all.Length
-        KinopoiskResults = $kp_info_all
-        KinopoiskId      = $kp_info.id
-        Message          = $message
+        Success  = $success
+        FilePath = $file.FullName
+        FileName = Split-Path $file.FullName -Leaf
+        ParsedName = $parsed_info.Name
+        ParsedNameTranslit = $parsed_name_translit
+        ParsedYear = $parsed_info.Year
+        #        KinopoiskFound = $kp_find_result.AllResults.Length
+        KinopoiskResult = $kp_find_result.Result
+        KinopoiskResultStr = "$($kp_find_result.Result.name) / $($kp_find_result.Result.alternativeName) / $($kp_find_result.Result.year)"
+        KinopoiskAllResults = $kp_find_result.AllResults
+        KinopoiskId = $kp_find_result.Result.id
+        Message  = $kp_find_result.Message
       }
     )
     
@@ -392,14 +367,22 @@ function Create-KodiMoviesNfo {
   
   $ok = @($stat | ? { $_.Success })
   if ($ok) {
-    Write-Host "Processed files ($($ok.Count)):" -ForegroundColor Green
+    Write-Host "files ($($ok.Count)):" -ForegroundColor Green
     $ok | % {
       Write-Host "`r`n==="
-      Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResults | fl * | Out-String).Trim())" -fo Green
-      if ($_.KinopoiskResults -and $_.KinopoiskResults.Length) {
-        Write-Host "Kinopoisk results:`r`n$(($_.KinopoiskResults | select id, name, alternativeName, type, year | ft -AutoSize | Out-String).Trim())" -fo Cyan
-      }
+      Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResult, KinopoiskAllResults | fl * | Out-String).Trim())" -fo Green
+      #      if ($_.KinopoiskAllResults -and $_.KinopoiskResults.Length) {
+      Write-Host "Kinopoi all results:`r`n$(($_.KinopoiskAllResults `
+          | select id, name, alternativeName, type, year, @{ Name = "CountriesAll"; Expression = { $_.countries.name -join ',' } } `
+          | ft -AutoSize | Out-String))" -fo Cyan
+      #      }
     }
+    
+    @{ Name = "PropertyName"; Expression = { $_.Property.Value } }
+    #| % { Add-Member -InputObject $_ -PassThru -MemberType NoteProperty -Name Title       -Value $_.GetTitle($cc)       } `
+    
+    Write-Host "`r`nShort list:" -fo Green
+    Write-Host "$($ok | select ParsedName, ParsedNameTranslit, FileName, KinopoiskResultStr, Message | ft -auto | Out-String)" -fo Green
   }
   
   $err = @($stat | ? { !$_.Success })
@@ -407,15 +390,20 @@ function Create-KodiMoviesNfo {
     Write-Host "`r`nNot processed files ($($err.Count)):" -ForegroundColor Red
     $err | % {
       Write-Host "`r`n==="
-      Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResults | fl * | Out-String).Trim())" -fo red
+      Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResult, KinopoiskAllResults | fl * | Out-String).Trim())" -fo red
       if ($_.KinopoiskResults -and $_.KinopoiskResults.Length) {
         Write-Host "Kinopoisk results:`r`n$(($_.KinopoiskResults | select id, name, alternativeName, type, year | ft -AutoSize | Out-String).Trim())" -fo Cyan
       }
     }
+    
+    Write-Host "`r`nShort list:" -fo Red
+    Write-Host "$($err | select ParsedName, ParsedNameTranslit, FileName, Message | ft -auto | Out-String)" -fo red
+    
   }
   
   Write-Host "`r`n === TOTALS ==="
-  Write-Host "Processed files: $($ok.Count)" -ForegroundColor Green
-  Write-Host "Not processed files: $($err.Count)" -ForegroundColor Red
+  Write-Host "Total files   : $($stat.Count)"
+  Write-Host "Processed     : $($ok.Count)" -ForegroundColor Green
+  Write-Host "Not processed : $($err.Count)" -ForegroundColor Red
   
 }

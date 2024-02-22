@@ -1,16 +1,16 @@
-### Каталог со скриптами:
+п»ї### РљР°С‚Р°Р»РѕРі СЃРѕ СЃРєСЂРёРїС‚Р°РјРё:
 [string]$src_scripts_dir = Convert-Path (Join-Path $PSScriptRoot '..') -ea Stop
 Write-Host "Tests _init: Source scripts dir: '$src_scripts_dir'"
 
-### Каталог с тестами:
+### РљР°С‚Р°Р»РѕРі СЃ С‚РµСЃС‚Р°РјРё:
 [string]$tests_dir = Convert-Path (Join-Path $src_scripts_dir "tests") -ea Stop
 Write-Host "Tests _init: `$tests_dir: '$tests_dir'"
 
-### Каталог с данными для тестов:
+### РљР°С‚Р°Р»РѕРі СЃ РґР°РЅРЅС‹РјРё РґР»СЏ С‚РµСЃС‚РѕРІ:
 [string]$test_data_root = Convert-Path (Join-Path $tests_dir "test_data") -ea Stop
 Write-Host "Tests _init: `$test_data_root: '$test_data_root'"
 
-### Каталог с конфигами для тестов:
+### РљР°С‚Р°Р»РѕРі СЃ РєРѕРЅС„РёРіР°РјРё РґР»СЏ С‚РµСЃС‚РѕРІ:
 [string]$configs_dir = Convert-Path (Join-Path $tests_dir "configs") -ea Stop
 Write-Host "Tests _init: `$configs_dir: '$configs_dir'"
 
