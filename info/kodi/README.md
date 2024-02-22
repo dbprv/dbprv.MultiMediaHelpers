@@ -1,4 +1,4 @@
-
+﻿
 ## .nfo
 
 About Kodi .nfo files:
@@ -13,3 +13,6 @@ About Kodi .nfo files:
 https://kodi.wiki/view/Userdata
 
 
+Перечитать инфу из .nfo:
+- ПКМ на папке, Set content = None, применить с очисткой
+- ПКМ на папке, Set content = Movies, применить со сканированием
