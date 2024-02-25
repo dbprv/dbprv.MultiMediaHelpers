@@ -9,111 +9,202 @@ if (0) {
 }
 
 ### Types:
-class FilmInfo {
+enum MediaContentType {
+  None
+  Movie
+  TVShow
+  MusicVideo
+}
+
+class MediaInfo {
+  [string]$FileName
+  $Tokens
+  [List[string]]$UnknownTokens = [List[string]]::new()
   [string]$Name
+  [MediaContentType]$ContentType
   [int]$Year
   [string]$Resolution
   [string]$Source
   [string]$DynamicRange
   [string]$Codec
-  [string[]]$Unknown = @()
+  [List[string]]$Sound = [List[string]]::new()
   [string]$Container
+  [int]$Season
+  [string]$SeasonSuffix
 }
+
+
 
 ### Variables:
 
-$kodi_nfo_template = @"
+$kodi_nfo_templates = [Dictionary[MediaContentType, string]]::new()
+$kodi_nfo_templates.Add('Movie',
+  @"
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-<movie>
+  <movie>
+    <title/>
+    <originaltitle/>
+    <year/>
+    <plot/>
+    <mpaa/>
+  </movie>
+"@
+)
+
+$kodi_nfo_templates.Add('TVShow',
+  @"
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<tvshow>
   <title/>
   <originaltitle/>
   <year/>
+  <season/>
   <plot/>
   <mpaa/>
-</movie>
+</tvshow>
 "@
+)
 
-#??? tagline = shortDescription !!! ломает сканирование
+
+#??? проверить: tagline = shortDescription !!! ломает сканирование
+
 
 ### Functions:
 
 function Parse-FileName {
   [CmdletBinding()]
-  [OutputType([FilmInfo])]
+  [OutputType([MediaInfo])]
   param (
     [Parameter(Mandatory = $true)]
-    [string]$Name
+    [string]$Name,
+    [MediaContentType]$ContentType = 'Movie'
   )
+  
+  Write-Verbose "Parse-FileName: Name: '$Name'"
   
   $config = Get-Config
   $media_params = $config.FileNameTokens
   
-  $result = [FilmInfo]::new()
-  $film_name_done = $false
+  $result = [MediaInfo]@{
+    FileName    = $Name
+    ContentType = $ContentType
+  }
   
   $containers = @(
     [io.path]::GetExtension($Name).Trim('.')
   )
   
-  $Name.Replace('[', "`n[").Replace(']', "]`n").Replace('(', "`n[").Replace(')', "]`n").Split("`n", [StringSplitOptions]::RemoveEmptyEntries) | % {
-    if ($_.StartsWith('[')) {
-      $_
-    } else {
-      $_ -split ' ' | % { "$_".Trim() } | ? { $_ }
-    }
-  } | % {
-    if ($_.StartsWith('[')) {
-      $_
-    } elseif ($_ -in $media_params.ExcludeSplit) {
-      $_
-    } else {
-      $_ -split '[._]' | % { "$_".Trim() } | ? { $_ }
-    }
-  } | % { "$_".Trim() } | ? { $_ } | % {
-    if ($_.StartsWith('[')) {
-      [pscustomobject]@{
-        Value   = $_.TrimStart('[').TrimEnd(']')
-        Bracket = $true
-      }
-    } else {
-      [pscustomobject]@{
-        Value   = $_
-        Bracket = $false
-      }
-    }
-  } | % {
-    Write-Verbose "Process token '$_'"
-    
-    if (!$film_name_done) {
-      if (($_.Value -notmatch '^\d{4}$') -and (!$_.Bracket)) {
-        $result.Name += $_.Value + ' '
-        
+  ### First - split file name to tokens:  
+  
+  ### Заменить season N, сезон N на [SN]
+  $prepare_name = $Name -replace '(season|сезон)\s*(\d+)', '[S$2]'
+  
+  $sb = [System.Text.StringBuilder]::new($prepare_name)
+  
+  ### Разбить на строки части в скобках:
+  ### Части в скобках далее не разбиваются
+  $sb.Replace('[', "`n[") >$null
+  $sb.Replace(']', "]`n") >$null
+  $sb.Replace('(', "`n[") >$null
+  $sb.Replace(')', "]`n") >$null
+  
+  ### Поместить в скобки части, которые не надо разбивать (например H.265):
+  $media_params.DoNotSplit | % {
+    $sb.Replace($_, "`n[$_]`n") >$null
+  }
+  
+  Write-Verbose "Parse-FileName: sb:`r`n===`r`n$sb`r`n==="
+  
+  $result.Tokens = @(
+    $sb.ToString().Split("`n", [StringSplitOptions]::RemoveEmptyEntries) | % {
+      if ($_.StartsWith('[')) {
+        ### Строки в скобках не разбиваем:
+        $_
       } else {
-        if ($_.Value -match '^\d{4}$') {
-          $result.Year = $_.Value
-        }
-        $film_name_done = $true
+        ### Разбиваем по пробелам:
+        $_ -split ' '
       }
       
-    } elseif (($_.Value -match '^\d{4}$') -and (!$result.Year)) {
-      $result.Year = $_.Value
-    } elseif ($_.Value -in $media_params.Resolutions) {
-      $result.Resolution = $_.Value
-    } elseif ($_.Value -in $media_params.Sources) {
-      $result.Source = $_.Value
-    } elseif ($_.Value -in $containers) {
-      $result.Container = $_.Value
-    } elseif ($_.Value -in $media_params.DynamicRanges) {
-      $result.DynamicRange = $_.Value
-    } elseif ($_.Value -in $media_params.Codecs) {
-      $result.Codec = $_.Value
+    } | % {
+      ### Строки в скобках не разбиваем:
+      if ($_.StartsWith('[')) {
+        $_
+      } else {
+        ### Разбиваем по ._
+        $_ -split '[._]'
+      }
+      
+    } | % { "$_".Trim(' -') } | ? { $_ } | % {
+      
+      if ($_.StartsWith('[')) {
+        [pscustomobject]@{
+          Value    = $_.Trim('[]')
+          Brackets = $true
+        }
+      } else {
+        [pscustomobject]@{
+          Value    = $_
+          Brackets = $false
+        }
+      }
+      
+    }
+  )
+  
+  
+  Write-Verbose "Parse-FileName: tokens:`r`n$(($result.Tokens | ft -AutoSize | Out-String).Trim())"
+  
+  ### Second - parse tokens:
+  $name_done = $false
+  $name_tokens = [List[string]]::new()
+  for ($i = 0; $i -lt $result.Tokens.Length; $i++) {
+    $token = $result.Tokens[$i].Value
+    $brackets = $result.Tokens[$i].Brackets
+    Write-Verbose "Process token '$token'"
+    
+    if ($token -in $media_params.Resolutions) {
+      $result.Resolution = $token
+      $name_done = $true
+      
+    } elseif ($token -in $media_params.Sources) {
+      $result.Source = $token
+      $name_done = $true
+      
+    } elseif ($token -in $media_params.DynamicRanges) {
+      $result.DynamicRange = $token
+      $name_done = $true
+      
+    } elseif ($token -in $media_params.Codecs) {
+      $result.Codec = $token
+      $name_done = $true
+      
+    } elseif ($token -in $config.VideoFilesExtensions) {
+      $result.Container = $token
+      $name_done = $true
+      
+    } elseif ($token -in $media_params.Sound) {
+      $result.Sound.Add($token)
+      $name_done = $true
+      
+    } elseif ((!$result.Year) -and ($token -match '^(1|2)\d{3}$')) {
+      $result.Year = $token
+      $name_done = $true
+      
+    } elseif (($ContentType -eq 'TVShow') -and ($token -match '^(S|season\s*|сезон\s*)(\d+)(.*)$')) {
+      $result.Season = $Matches[2]
+      $result.SeasonSuffix = $Matches[3]
+      $name_done = $true
+      
+    } elseif ((!$name_done) -and (!$brackets)) {
+      $name_tokens.Add($token)
+      
     } else {
-      $result.Unknown += $_.Value
+      $result.UnknownTokens.Add($token)
     }
     
   }
   
-  $result.Name = $result.Name.Trim()
+  $result.Name = $name_tokens -join ' '
   
   return $result
 }
@@ -129,7 +220,9 @@ function Export-KodiNfo {
   
   Write-Verbose "Export-KodiNfo: begin"
   
-  $xml = [xml]$kodi_nfo_template
+  $xml = [xml]$kodi_nfo_templates['Movies']
+  #  $xml = [xml]$kodi_nfo_templates[[MediaContentType]::Movies]
+  
   $doc = $xml.DocumentElement
   
   $doc.title = $kp_info.name
@@ -307,7 +400,7 @@ function Create-KodiMoviesNfo {
     #    $kp_info = $null
     $kp_find_result = $null
     
-    [FilmInfo]$parsed_info = Parse-FileName $file.Name
+    [MediaInfo]$parsed_info = Parse-FileName $file.Name
     
     try {
       

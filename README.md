@@ -7,6 +7,31 @@ Powershell module with various functions for working with multimedia files.
 - https://github.com/dbprv/dbprv.MultiMediaHelpers
 - https://www.powershellgallery.com/packages/dbprv.MultiMediaHelpers
 
+
+Аналоги:
+
+- https://github.com/fracpete/kodi-nfo-generator
+
+- https://nfo-maker.com
+
+- MediaElch \
+  https://forum.kodi.tv/showthread.php?tid=136333 \
+  https://github.com/komet/mediaelch
+  stars 766
+
+- Media Companion \
+  https://forum.kodi.tv/showthread.php?tid=129134 \
+  https://sourceforge.net/p/mediacompanion/wiki/Home
+
+- https://www.reddit.com/r/tinyMediaManager \
+  https://www.tinymediamanager.org \
+  https://gitlab.com/tinyMediaManager/tinyMediaManager \
+  starts 196
+
+- Ember Media Manager https://forum.kodi.tv/forumdisplay.php?fid=195 \
+  https://github.com/DanCooper/Ember-MM-Newscraper \
+  последние изменения 2 года назад
+
 ## Functions
 
 ### Create-KodiMoviesNfo

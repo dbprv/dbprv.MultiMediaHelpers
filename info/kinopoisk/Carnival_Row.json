@@ -1,0 +1,117 @@
+{
+  "internalNames": [
+    "Карнивал Роу",
+    "Carnival Row",
+    "狂欢街命案",
+    "致命狂欢街",
+    "קרנבל רו",
+    "คาร์นิวัล โรว์"
+  ],
+  "name": "Карнивал Роу",
+  "alternativeName": "Carnival Row",
+  "enName": "",
+  "year": 2019,
+  "genres": [
+    {
+      "name": "фэнтези"
+    },
+    {
+      "name": "триллер"
+    },
+    {
+      "name": "драма"
+    },
+    {
+      "name": "криминал"
+    },
+    {
+      "name": "детектив"
+    }
+  ],
+  "countries": [
+    {
+      "name": "США"
+    }
+  ],
+  "releaseYears": [
+    {
+      "start": 2019,
+      "end": 2023
+    }
+  ],
+  "id": 891433,
+  "names": [
+    {
+      "name": "Карнивал Роу"
+    },
+    {
+      "name": "Carnival Row"
+    },
+    {
+      "name": "狂欢街命案",
+      "language": "CN",
+      "type": null
+    },
+    {
+      "name": "致命狂欢街",
+      "language": "CN",
+      "type": null
+    },
+    {
+      "name": "קרנבל רו",
+      "language": "IL",
+      "type": null
+    },
+    {
+      "name": "คาร์นิวัล โรว์",
+      "language": "TH",
+      "type": null
+    }
+  ],
+  "type": "tv-series",
+  "description": "Неовикторианский мегаполис Бург в опасности — идет война. Фэнтезийные существа-беженцы, нашедшие здесь приют, гибнут от рук неведомого маньяка. За дело берутся потасканный детектив Райкрофт и фея Виньетт. Вместе им предстоит восстановить равновесие мира и поймать маньяка-убийцу.",
+  "shortDescription": "Угрюмый полицейский и фея-сорвиголова — против загадочных темных сил. Стильный неонуар с социальным подтекстом",
+  "logo": {
+    "url": "https://avatars.mds.yandex.net/get-ott/374297/2a0000017d5093d636d19bb485885cba17b8/orig"
+  },
+  "poster": {
+    "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/4303601/96aac89e-9073-4d7a-ad4b-293a785ba969/orig",
+    "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/4303601/96aac89e-9073-4d7a-ad4b-293a785ba969/x1000"
+  },
+  "backdrop": {
+    "url": "https://imagetmdb.com/t/p/original/tQZtXSYDzQUaASZYMfakoNo9DC3.jpg",
+    "previewUrl": "https://imagetmdb.com/t/p/w500/tQZtXSYDzQUaASZYMfakoNo9DC3.jpg"
+  },
+  "rating": {
+    "kp": 7.196,
+    "imdb": 7.7,
+    "filmCritics": 0,
+    "russianFilmCritics": 0,
+    "await": null
+  },
+  "votes": {
+    "kp": 40429,
+    "imdb": 81569,
+    "filmCritics": 0,
+    "russianFilmCritics": 1,
+    "await": 2784
+  },
+  "movieLength": 0,
+  "isSeries": true,
+  "ticketsOnSale": false,
+  "totalSeriesLength": null,
+  "seriesLength": 56,
+  "ratingMpaa": null,
+  "ageRating": 18,
+  "top10": null,
+  "top250": null,
+  "typeNumber": 2,
+  "status": "completed",
+  "internalRating": 7.196,
+  "internalVotes": 40429,
+  "externalId": {
+    "imdb": "tt0489974",
+    "tmdb": 90027,
+    "kpHD": "474a3e69b9edcfe5a9716fcbf6437324"
+  }
+}
