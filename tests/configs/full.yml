@@ -44,3 +44,6 @@ VideoFilesExtensions:
   - mp4
   - ts
   - avi
+
+ExcludeFolders:
+  - .actors
