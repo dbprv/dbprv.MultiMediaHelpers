@@ -118,7 +118,7 @@ Describe 'Create-KodiMoviesNfo' {
   }
 }
 
-Describe 'Get-TVShowsKodiNfo' {
+Describe 'Get-KodiNfo' {
   BeforeAll {
     $VerbosePreference = 'SilentlyContinue'
   }
@@ -132,20 +132,39 @@ Describe 'Get-TVShowsKodiNfo' {
   ) {
     Write-Host "`r`n=== $folder ==="
     
-    $result = Get-TVShowsKodiNfo -Folder $folder -Limit $limit
+    $result = Get-KodiNfo -Folder $folder -Limit $limit
     #    Write-Verbose "Result: [$result]"
-    Write-Host "result:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
+#    Write-Host "result:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
     
-    $no_trailer = @($result | ? { !$_.has_trailer })
-    if ($no_trailer) {
-      Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo yellow
-    }
-    
-    $no_tmdb_id = @($result | ? { !$_.id_tmdb })
-    if($no_tmdb_id) {
-      Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
-    }
+#    $no_trailer = @($result | ? { !$_.has_trailer })
+#    if ($no_trailer) {
+#      Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo yellow
+#    }
+#    
+#    $no_tmdb_id = @($result | ? { !$_.id_tmdb })
+#    if($no_tmdb_id) {
+#      Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
+#    }
     
     $result | Should -Not -BeNullOrEmpty
+  }
+}
+
+
+Describe 'Check-KodiNfo' {
+  BeforeAll {
+    $VerbosePreference = 'SilentlyContinue'
+  }
+  
+  It 'folder: [<folder>], limit: [<limit>]' -ForEach @(
+    @{ folder = 'H:\Video\Фильмы'; limit = 333 }
+    @{ folder = 'H:\Video\Детское'; limit = 333 }
+    @{ folder = 'H:\Video\Сериалы'; limit = 333 }
+    @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
+    
+  ) {
+    $result = Check-KodiNfo -Folder $folder -Limit $limit
+    Write-Verbose "Result: [$result]"
+    $result | Should -BeNullOrEmpty
   }
 }

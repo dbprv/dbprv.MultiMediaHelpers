@@ -794,7 +794,7 @@ function Create-KodiMoviesNfo {
   
 }
 
-function Get-TVShowsKodiNfo {
+function Get-KodiNfo {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]
@@ -823,4 +823,29 @@ function Get-TVShowsKodiNfo {
     
     [PSCustomObject]$ht
   }
+}
+
+function Check-KodiNfo {
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]$Folder,
+    [int]$Limit = [int]::MaxValue
+  )
+  
+  Write-Host "`r`n=== Check Kodi Nfo in '$folder' ==="
+  
+  $result = Get-KodiNfo -Folder $folder -Limit $limit
+  Write-Host "All Nfo:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
+  
+  $no_trailer = @($result | ? { !$_.has_trailer })
+  if ($no_trailer) {
+    Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo yellow
+  }
+  
+  $no_tmdb_id = @($result | ? { !$_.id_tmdb })
+  if ($no_tmdb_id) {
+    Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
+  }
+  
 }
