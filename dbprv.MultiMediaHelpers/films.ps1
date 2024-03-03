@@ -877,7 +877,7 @@ function Export-KodiNfoCsv {
   )
   
   Write-Verbose "Export-KodiNfoCsv: begin"
-  Write-Verbose "Export-KodiNfoCsv: Folders:`r`n$($Folders -join "`r`n")"
+  Write-Verbose "Export-KodiNfoCsv: Folders($($Folders.Length)):`r`n$($Folders -join "`r`n")"
   Write-Verbose "Export-KodiNfoCsv: ResultPath: '$ResultPath'"
   
   $Folders | Get-KodiNfo | Sort-Object rating_kinopoisk, rating_imdb -Descending `
