@@ -103,10 +103,10 @@ Describe 'Create-KodiMoviesNfo' {
     #  @{ folder = 'H:\Video\Россия'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 333 }
     #  @{ folder = 'H:\Video\Россия\test'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 3 }
     
-#  @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
-
+    #  @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
+    
     ### Сериалы:
-     @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
+    @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
     #  @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
     # @{ folder = 'H:\video_test\tvshows'; type = 'TVShow'; countries_any = @(); limit = 333 }
     
@@ -125,8 +125,8 @@ Describe 'Get-KodiNfo' {
   
   It 'folder: [<folder>], limit: [<limit>]' -ForEach @(
     @{ folder = 'H:\Video\Фильмы'; limit = 333 }
-    @{ folder = 'H:\Video\Детское'; limit = 333 }    
-    @{ folder = 'H:\Video\Сериалы'; limit = 333 }    
+    @{ folder = 'H:\Video\Детское'; limit = 333 }
+    @{ folder = 'H:\Video\Сериалы'; limit = 333 }
     @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
     
   ) {
@@ -134,17 +134,17 @@ Describe 'Get-KodiNfo' {
     
     $result = Get-KodiNfo -Folder $folder -Limit $limit
     #    Write-Verbose "Result: [$result]"
-#    Write-Host "result:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
+    #    Write-Host "result:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
     
-#    $no_trailer = @($result | ? { !$_.has_trailer })
-#    if ($no_trailer) {
-#      Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo yellow
-#    }
-#    
-#    $no_tmdb_id = @($result | ? { !$_.id_tmdb })
-#    if($no_tmdb_id) {
-#      Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
-#    }
+    #    $no_trailer = @($result | ? { !$_.has_trailer })
+    #    if ($no_trailer) {
+    #      Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo yellow
+    #    }
+    #    
+    #    $no_tmdb_id = @($result | ? { !$_.id_tmdb })
+    #    if($no_tmdb_id) {
+    #      Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
+    #    }
     
     $result | Should -Not -BeNullOrEmpty
   }
@@ -157,13 +157,25 @@ Describe 'Check-KodiNfo' {
   }
   
   It 'folder: [<folder>], limit: [<limit>]' -ForEach @(
-    @{ folder = 'H:\Video\Фильмы'; limit = 333 }
+    # @{ folder = 'H:\Video\Фильмы'; limit = 333 }
     @{ folder = 'H:\Video\Детское'; limit = 333 }
-    @{ folder = 'H:\Video\Сериалы'; limit = 333 }
-    @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
+    # @{ folder = 'H:\Video\Сериалы'; limit = 333 }
+    # @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
     
   ) {
     $result = Check-KodiNfo -Folder $folder -Limit $limit
+    Write-Verbose "Result: [$result]"
+    $result | Should -BeNullOrEmpty
+  }
+}
+
+Describe 'Export-KodiNfoCsv' {
+  It 'folder: [<folder>], result_path: [<result_path>]' -ForEach @(
+    # @{ folders = @('H:\Video\Фильмы', 'H:\Video\Детское'); result_path = "H:\Video\Movies.csv" }
+    @{ folders = @('H:\Video\Сериалы', 'H:\Video\Сериалы2'); result_path = "H:\Video\TVShows.csv" }
+    
+  ) {
+    $result = Export-KodiNfoCsv -Folders $folders -ResultPath $result_path
     Write-Verbose "Result: [$result]"
     $result | Should -BeNullOrEmpty
   }

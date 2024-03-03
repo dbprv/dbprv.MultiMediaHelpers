@@ -633,7 +633,7 @@ function Create-KodiMoviesNfo {
               }
               if (!$names) {
                 throw "Empty names list for TMDB search"
-              }              
+              }
               Write-Verbose "Create-KodiMoviesNfo: search TMDB by names($($names.Count)): [`r`n$($names -join "`r`n")`r`n]"
               
               foreach ($n in $names) {
@@ -707,7 +707,7 @@ function Create-KodiMoviesNfo {
           KinopoiskResultStr = "$($kp_search.Result.name) / $($kp_search.Result.alternativeName) / $($kp_search.Result.year)$($season_str)"
           KinopoiskAllResults = $kp_search.AllResults
           KinopoiskId = $kp_search.Result.id
-          TmdbId = $tmdb_id
+          TmdbId   = $tmdb_id
           Message  = $kp_search.Message
           ExportResult = $export_result
           Warnings = $warnings
@@ -796,32 +796,50 @@ function Create-KodiMoviesNfo {
 
 function Get-KodiNfo {
   [CmdletBinding()]
-  param (
-    [Parameter(Mandatory = $true)]
+  param
+  (
+    [Parameter(Mandatory = $true,
+               ValueFromPipeline = $true)]
     [string]$Folder,
     [int]$Limit = [int]::MaxValue
   )
   
-  dir $Folder -Include @("*.nfo") -Recurse -File | select -First $Limit | % {
-    $file = $_
-    Write-Verbose "Get-TVShowsKodiNfo: process file '$($file.FullName)'"
-    $xml = [xml](gc -LiteralPath $file.FullName -Raw -ErrorAction 'Stop')
-    $root = $xml.DocumentElement
-    $ht = [ordered]@{
-      FilePath      = $file.FullName
-      DirName       = $file.Directory.Name
-      title         = $root.title
-      originaltitle = $root.originaltitle
-      year          = $root.year
-      season        = $root.season
-      has_trailer       = [bool]$root.trailer
+  process {
+    
+    dir $Folder -Include @("*.nfo") -Recurse -File | select -First $Limit | % {
+      $file = $_
+      Write-Verbose "Get-TVShowsKodiNfo: process file '$($file.FullName)'"
+      $xml = [xml](gc -LiteralPath $file.FullName -Raw -ErrorAction 'Stop')
+      $root = $xml.DocumentElement
+      $ht = [ordered]@{
+        Folder        = $file.DirectoryName
+        #        Dir           = $file.Directory.FullName.Substring($Folder.Length + 1)
+        FileName      = $file.Name
+        #        FilePath      = $file.FullName
+        #        FileRelPath = $file.FullName.Substring($Folder.Length + 1)
+        #        DirName       = $file.Directory.Name
+        title         = $root.title
+        originaltitle = $root.originaltitle
+        year          = $root.year
+        tvshow_season = $root.season
+        has_trailer   = [bool]$root.trailer
+      }
+      
+      $xml.DocumentElement.ratings.rating | % {
+        $ht["rating_$($_.name)"] = "$($_.value)".Replace('.', ',')
+        $ht["votes_$($_.name)"] = $_.votes
+        #        $ht["rating_$($_.GetAttribute('name'))"] = "$($_.value.innerText) ($($_.votes.innerText))"
+      }
+      
+      $xml.DocumentElement.uniqueid | % {
+        $ht["id_$($_.GetAttribute('type'))"] = $_.innerText
+      }
+      
+      
+      
+      [PSCustomObject]$ht
     }
     
-    $xml.DocumentElement.uniqueid | % {
-      $ht["id_$($_.GetAttribute('type'))"] = $_.innerText
-    }
-    
-    [PSCustomObject]$ht
   }
 }
 
@@ -848,4 +866,22 @@ function Check-KodiNfo {
     Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
   }
   
+}
+
+function Export-KodiNfoCsv {
+  [CmdletBinding(DefaultParameterSetName = 'Dir')]
+  param
+  (
+    [string[]]$Folders,
+    [string]$ResultPath
+  )
+  
+  Write-Verbose "Export-KodiNfoCsv: begin"
+  Write-Verbose "Export-KodiNfoCsv: Folders:`r`n$($Folders -join "`r`n")"
+  Write-Verbose "Export-KodiNfoCsv: ResultPath: '$ResultPath'"
+  
+  $Folders | Get-KodiNfo | Sort-Object rating_kinopoisk, rating_imdb -Descending `
+  | Export-Csv $ResultPath -Delimiter ";" -NoTypeInformation -Force -Encoding "UTF8"
+  
+  Write-Verbose "Export-KodiNfoCsv: end"
 }

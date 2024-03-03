@@ -13,7 +13,7 @@ function Start-ScriptLogging() {
   if ($PSVersionTable.PSEdition -eq 'Core') {
     Write-Verbose "Start-ScriptLogging: disable colors in files for PS Core"
     ### Для PS7: Консоль - цвет, файл - чистый текст:
-#      $PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::Host    
+    #      $PSStyle.OutputRendering = [System.Management.Automation.OutputRendering]::Host    
   }
   
   if (!$script:logging_started) {
@@ -47,14 +47,16 @@ function Stop-ScriptLogging() {
 }
 
 function Copy-ScriptLog {
-  [CmdletBinding()]
-  param
-  (
-    [Parameter(ParameterSetName = 'Path')]
+  [CmdletBinding(DefaultParameterSetName = 'Dir')]
+  param (
+    [Parameter(ParameterSetName = 'Path',
+               Mandatory = $true)]
     [string]$DestinationPath,
-    [Parameter(ParameterSetName = 'Dir')]
+    [Parameter(ParameterSetName = 'Dir',
+               Mandatory = $true)]
     [string]$DestiantionDir
   )
+  
   Write-Verbose "Copy-ScriptLog: begin"
   
   if (!$script:logging_started) {
@@ -67,7 +69,7 @@ function Copy-ScriptLog {
       break
     }
     'Dir' {
-      $DestinationPath  = Join-Path $DestiantionDir (Split-Path $script:script_log_path -Leaf)
+      $DestinationPath = Join-Path $DestiantionDir (Split-Path $script:script_log_path -Leaf)
       break
     }
   }
