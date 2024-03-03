@@ -1,6 +1,11 @@
+WorkingDirectory: D:\mmh
+
+Logging:
+  Directory: '{config:WorkingDirectory}\logs'
+
 Cache:
   Enabled: true
-  Dir: D:\pester\cache
+  Directory: '{config:WorkingDirectory}\cache'
   #Expires: 0 ### seconds ### NOT IMPLEMENTED
 
 FileNameTokens:
@@ -35,15 +40,21 @@ FileNameTokens:
     - DD.5.1
     - DDP5.1
     - "7.1"
+
 Kinopoisk:
   ApiUrl: https://api.kinopoisk.dev/v1.4
   ApiKey: "{env:KINOPOISK_API_KEY}"
+
+Tmdb:
+  ApiUrl: https://api.themoviedb.org/3
+  AccessToken: "{env:TMDB_ACCESS_TOKEN}"
 
 VideoFilesExtensions:
   - mkv
   - mp4
   - ts
   - avi
+  - m2ts
 
 ExcludeFolders:
   - .actors

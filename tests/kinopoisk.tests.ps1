@@ -46,8 +46,13 @@ Describe 'Find-KinopoiskMovieSingle' {
     #  @{ name = 'Telekinez'; year = 2019; countries = @('США'); type = 'movie'; expected_name = 'Telekinetic' }
 #    @{ name = 'Telekinez'; year = 2023; countries = @('Россия'); type = 'movie'; expected_name = 'Телекинез' }
     #    @{ name = 'Телекинез'; year = 2023; countries = @('Россия'); type = 'movie'; expected_name = 'Телекинез' }
-    @{ name = 'Foundation'; year = 2021; countries = @(); type = 'tvshow'; expected_name = 'Основание' }
-    @{ name = 'Иные'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
+#    @{ name = 'Papa ne zvezdi'; year = 2023; countries = @(); type = 'movie'; expected_name = 'Папа, не звезди!' }
+#    @{ name = 'Sexmission'; year = 1983; countries = @(); type = 'movie'; expected_name = 'Сексмиссия' }
+    
+  #  @{ name = 'Foundation'; year = 2021; countries = @(); type = 'tvshow'; expected_name = 'Основание' }
+    #  @{ name = 'Иные'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
+   @{ name = 'Inye'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
+#    @{ name = 'Beavis and Butt-Head'; year = 2022; countries = @(); type = 'tvshow'; expected_name = 'Бивис и Батт-Хед' }
     
   ) {
     $result = Find-KinopoiskMovieSingle -Name $name `

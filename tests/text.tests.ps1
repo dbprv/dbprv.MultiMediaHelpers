@@ -22,6 +22,7 @@ Describe 'Translit-EngToRus' {
     @{ string = 'Znakomstvo roditeley'; expected = 'Знакомство родителей' }
     @{ string = 'Nezdorovyiy'; expected = 'Нездоровый' }
     @{ string = 'Uzhasayuschiy 2'; expected = 'Ужасающий 2' }
+    @{ string = 'bivis i batthed'; expected = 'бивис и баттхед' }
     
   ) {
     $result = Translit-EngToRus $string
