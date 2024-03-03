@@ -22,13 +22,13 @@ if (!(gv IsWindows -ea 0)) {
   $IsMacOS = $false
 }
 
-if ($IsWindows) {
-  [string]$script:tests_work_root = "D:\pester"
+[string]$tests_work_root = if ($IsWindows) {
+  "D:\pester"
 } else {
-  [string]$script:tests_work_root = Join-Path $env:HOME "pester"
+  Join-Path $env:HOME "pester"
 }
-Write-Verbose "Tests work root: '$script:tests_work_root'"
-if (!(Test-Path $script:tests_work_root -PathType Container)) {
-  New-Item -Path $script:tests_work_root -ItemType Directory >$null
-  if (!(Test-Path $script:tests_work_root -PathType Container)) { throw "Cannot create folder '$script:tests_work_root'" }
+Write-Verbose "Tests work root: '$tests_work_root'"
+if (!(Test-Path $tests_work_root -PathType Container)) {
+  New-Item -Path $tests_work_root -ItemType Directory >$null
+  if (!(Test-Path $tests_work_root -PathType Container)) { throw "Cannot create folder '$tests_work_root'" }
 }

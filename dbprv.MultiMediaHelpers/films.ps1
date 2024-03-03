@@ -1,135 +1,272 @@
 ﻿using namespace System.Collections.Generic
 
 ### Includes:
-. "$PSScriptRoot\common.ps1"
+#. "$PSScriptRoot\common.ps1"
+. "$PSScriptRoot\logging.ps1"
 . "$PSScriptRoot\text.ps1"
+. "$PSScriptRoot\tmdb.ps1"
 
 if (0) {
   . "$PSScriptRoot\kinopoisk.ps1"
 }
 
 ### Types:
-class FilmInfo {
+enum MediaContentType {
+  None
+  Movie
+  TVShow
+  MusicVideo
+}
+
+
+class ParsedName {
+  [string]$FileName
+  $Tokens
+  [List[string]]$UnknownTokens = [List[string]]::new()
   [string]$Name
+  [MediaContentType]$ContentType
   [int]$Year
   [string]$Resolution
   [string]$Source
   [string]$DynamicRange
   [string]$Codec
-  [string[]]$Unknown = @()
+  [List[string]]$Sound = [List[string]]::new()
   [string]$Container
+  [int]$Season
+  [string]$SeasonSuffix
 }
 
-### Variables:
+class ExportKodiNfoResult {
+  [List[string]]$Warnings = [List[string]]::new()
+  [List[string]]$Errors = [List[string]]::new()
+}
 
-$kodi_nfo_template = @"
+class KinopoiskInfo {
+  $Id
+  $Search
+}
+
+class TmdbInfo {
+  $Id
+  $Search
+  $Trailers
+}
+
+class MediaInfo {
+  #  $Item
+  [string]$Path
+  [string]$Name
+  [string]$BaseName
+  [string]$Directory
+  [MediaContentType]$ContentType
+  [ParsedName]$ParsedName
+  #  [hashtable]$KP
+  [KinopoiskInfo]$KP = [KinopoiskInfo]::new()
+  [TmdbInfo]$TMDB = [TmdbInfo]::new()
+}
+
+
+### Variables:
+$app_name = 'dbprv.MultiMediaHelpers'
+
+$kodi_nfo_templates = [Dictionary[MediaContentType, string]]::new()
+$kodi_nfo_templates.Add('Movie',
+  @"
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-<movie>
+  <movie>
+    <title/>
+    <originaltitle/>
+    <year/>
+    <plot/>
+    <mpaa/>
+  </movie>
+"@
+)
+
+$kodi_nfo_templates.Add('TVShow',
+  @"
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<tvshow>
   <title/>
   <originaltitle/>
   <year/>
+  <season/>  
   <plot/>
   <mpaa/>
-</movie>
+  <episodeguide/>
+</tvshow>
 "@
+)
+#<episode/>
 
-#??? tagline = shortDescription !!! ломает сканирование
+#??? проверить: tagline = shortDescription !!! ломает сканирование
+
 
 ### Functions:
 
 function Parse-FileName {
   [CmdletBinding()]
-  [OutputType([FilmInfo])]
+  [OutputType([ParsedName])]
   param (
     [Parameter(Mandatory = $true)]
-    [string]$Name
+    [string]$Name,
+    [MediaContentType]$ContentType = 'Movie'
   )
+  
+  Write-Verbose "Parse-FileName: Name: '$Name'"
   
   $config = Get-Config
   $media_params = $config.FileNameTokens
   
-  $result = [FilmInfo]::new()
-  $film_name_done = $false
+  $result = [ParsedName]@{
+    FileName    = $Name
+    ContentType = $ContentType
+  }
   
   $containers = @(
     [io.path]::GetExtension($Name).Trim('.')
   )
   
-  $Name.Replace('[', "`n[").Replace(']', "]`n").Replace('(', "`n[").Replace(')', "]`n").Split("`n", [StringSplitOptions]::RemoveEmptyEntries) | % {
-    if ($_.StartsWith('[')) {
-      $_
-    } else {
-      $_ -split ' ' | % { "$_".Trim() } | ? { $_ }
-    }
-  } | % {
-    if ($_.StartsWith('[')) {
-      $_
-    } elseif ($_ -in $media_params.ExcludeSplit) {
-      $_
-    } else {
-      $_ -split '[._]' | % { "$_".Trim() } | ? { $_ }
-    }
-  } | % { "$_".Trim() } | ? { $_ } | % {
-    if ($_.StartsWith('[')) {
-      [pscustomobject]@{
-        Value   = $_.TrimStart('[').TrimEnd(']')
-        Bracket = $true
-      }
-    } else {
-      [pscustomobject]@{
-        Value   = $_
-        Bracket = $false
-      }
-    }
-  } | % {
-    Write-Verbose "Process token '$_'"
-    
-    if (!$film_name_done) {
-      if (($_.Value -notmatch '^\d{4}$') -and (!$_.Bracket)) {
-        $result.Name += $_.Value + ' '
-        
+  ### First - split file name to tokens:  
+  
+  ### Заменить season N, сезон N на [SN]
+  $prepare_name = $Name -replace '(season|сезон)\s*(\d+)', '[S$2]'
+  
+  $sb = [System.Text.StringBuilder]::new($prepare_name)
+  
+  ### Разбить на строки части в скобках:
+  ### Части в скобках далее не разбиваются
+  $sb.Replace('[', "`n[") >$null
+  $sb.Replace(']', "]`n") >$null
+  $sb.Replace('(', "`n[") >$null
+  $sb.Replace(')', "]`n") >$null
+  
+  ### Поместить в скобки части, которые не надо разбивать (например H.265):
+  $media_params.DoNotSplit | % {
+    $sb.Replace($_, "`n[$_]`n") >$null
+  }
+  
+  Write-Verbose "Parse-FileName: sb:`r`n===`r`n$sb`r`n==="
+  
+  $result.Tokens = @(
+    $sb.ToString().Split("`n", [StringSplitOptions]::RemoveEmptyEntries) | % {
+      if ($_.StartsWith('[')) {
+        ### Строки в скобках не разбиваем:
+        $_
       } else {
-        if ($_.Value -match '^\d{4}$') {
-          $result.Year = $_.Value
-        }
-        $film_name_done = $true
+        ### Разбиваем по пробелам:
+        $_ -split ' '
       }
       
-    } elseif (($_.Value -match '^\d{4}$') -and (!$result.Year)) {
-      $result.Year = $_.Value
-    } elseif ($_.Value -in $media_params.Resolutions) {
-      $result.Resolution = $_.Value
-    } elseif ($_.Value -in $media_params.Sources) {
-      $result.Source = $_.Value
-    } elseif ($_.Value -in $containers) {
-      $result.Container = $_.Value
-    } elseif ($_.Value -in $media_params.DynamicRanges) {
-      $result.DynamicRange = $_.Value
-    } elseif ($_.Value -in $media_params.Codecs) {
-      $result.Codec = $_.Value
+    } | % {
+      ### Строки в скобках не разбиваем:
+      if ($_.StartsWith('[')) {
+        $_
+      } else {
+        ### Разбиваем по ._
+        $_ -split '[._]'
+      }
+      
+    } | % { "$_".Trim(' -') } | ? { $_ } | % {
+      
+      if ($_.StartsWith('[')) {
+        [pscustomobject]@{
+          Value    = $_.Trim('[]')
+          Brackets = $true
+        }
+      } else {
+        [pscustomobject]@{
+          Value    = $_
+          Brackets = $false
+        }
+      }
+      
+    }
+  )
+  
+  
+  Write-Verbose "Parse-FileName: tokens:`r`n$(($result.Tokens | ft -AutoSize | Out-String).Trim())"
+  
+  ### Second - parse tokens:
+  $name_done = $false
+  $name_tokens = [List[string]]::new()
+  for ($i = 0; $i -lt $result.Tokens.Length; $i++) {
+    $token = $result.Tokens[$i].Value
+    $brackets = $result.Tokens[$i].Brackets
+    Write-Verbose "Process token '$token'"
+    
+    if ($token -in $media_params.Resolutions) {
+      $result.Resolution = $token
+      $name_done = $true
+      
+    } elseif ($token -in $media_params.Sources) {
+      $result.Source = $token
+      $name_done = $true
+      
+    } elseif ($token -in $media_params.DynamicRanges) {
+      $result.DynamicRange = $token
+      $name_done = $true
+      
+    } elseif ($token -in $media_params.Codecs) {
+      $result.Codec = $token
+      $name_done = $true
+      
+    } elseif ($token -in $config.VideoFilesExtensions) {
+      $result.Container = $token
+      $name_done = $true
+      
+    } elseif ($token -in $media_params.Sound) {
+      $result.Sound.Add($token)
+      $name_done = $true
+      
+    } elseif ((!$result.Year) -and ($token -match '^(1|2)\d{3}$')) {
+      $result.Year = $token
+      $name_done = $true
+      
+    } elseif (($ContentType -eq 'TVShow') -and ($token -match '^(S|season\s*|сезон\s*)(\d+)(.*)$')) {
+      $result.Season = $Matches[2]
+      $result.SeasonSuffix = $Matches[3]
+      $name_done = $true
+      
+    } elseif ((!$name_done) -and (!$brackets)) {
+      $name_tokens.Add($token)
+      
     } else {
-      $result.Unknown += $_.Value
+      $result.UnknownTokens.Add($token)
     }
     
   }
   
-  $result.Name = $result.Name.Trim()
+  $result.Name = $name_tokens -join ' '
+  
+  ### Для сериалов установить по-умолчанию сезон 1
+  if (($ContentType -eq 'TVShow') -and (!$result.Season)) {
+    $result.Season = 1
+  }
   
   return $result
 }
 
 function Export-KodiNfo {
   [CmdletBinding()]
-  param (
+  param
+  (
     [Parameter(Mandatory = $true)]
-    [string]$VideoFilePath,
-    [Alias('KinopoiskInfo')]
-    $kp_info
+    [MediaInfo]$MediaInfo
   )
   
   Write-Verbose "Export-KodiNfo: begin"
   
-  $xml = [xml]$kodi_nfo_template
+  $content_type = $MediaInfo.ContentType
+  $parsed_info = $MediaInfo.ParsedName
+  $kp_info = $MediaInfo.KP.Search
+  $tmdb_info = $MediaInfo.TMDB.Search
+  $tmdb_trailers = $MediaInfo.TMDB.Trailers
+  
+  $xml = [xml]$kodi_nfo_templates[$content_type]
+  
+  $result = [ExportKodiNfoResult]::new()
+  
   $doc = $xml.DocumentElement
   
   $doc.title = $kp_info.name
@@ -153,6 +290,68 @@ function Export-KodiNfo {
   #  if ($kp_info.ageRating) {
   #    $doc.mpaa = "$($kp_info.ageRating)+" + " / " + $doc.mpaa
   #  }
+  
+  ### IDs
+  #  if ($kp_info.externalId.imdb) {
+  #    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
+  #    $node.SetAttribute('type', 'imdb')
+  #    $node.InnerText = $kp_info.externalId.imdb
+  #  }
+  
+  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
+  $node.SetAttribute('type', 'kinopoisk')
+  #  $node.SetAttribute('default', 'true')
+  $node.InnerText = $kp_info.id
+  
+  #  <uniqueid type="imdb">tt0119116</uniqueid>
+  #  <uniqueid type="tmdb" default="true">18</uniqueid>
+  $kp_info.externalId.psobject.Properties.GetEnumerator() | % {
+    #    Write-Verbose "Export-KodiNfo: externalId: name: '$($_.Name)', value: '$($_.Value)'"    
+    if ($_.Value) {
+      $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
+      $node.SetAttribute('type', $_.Name)
+      $node.InnerText = $_.Value
+    }
+  }
+  
+  ### Только для сериалов:
+  if ($content_type -eq 'TVShow') {
+    $doc.season = "$($parsed_info.Season)"
+    
+    #  <episodeguide>{&quot;imdb&quot;:&quot;tt0804484&quot;,&quot;tmdb&quot;:&quot;93740&quot;}</episodeguide>
+    #    $doc.episodeguide = (ConvertTo-Json $kp_info.externalId)
+    
+    #    ### Если TMDB ID нет, ищем сериал на TMDB
+    #    if (!$kp_info.externalId.tmdb) {
+    #      $tmdb_info = Find-TmdbTVShowSingle -Name $kp_info.name -Year $kp_info.year
+    #      if ($tmdb_info) {
+    #        Add-Member -InputObject $kp_info.externalId -MemberType NoteProperty -Name tmdb -Value $tmdb_info.id
+    #      }
+    #    }
+    
+    $episodeguide = @{ }
+    $xml.tvshow.uniqueid | % {
+      if ($_.InnerText) {
+        $episodeguide[$_.GetAttribute('type')] = $_.InnerText
+      }
+    }
+    
+    #    $kp_info.externalId.psobject.Properties.GetEnumerator() | % {
+    #      if ($_.Value) {
+    #        $episodeguide[$_.Name] = "$($_.Value)"
+    #      }
+    #      #      $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
+    #      #      $node.SetAttribute('type', $_.Name)
+    #      #      $node.InnerText = $_.Value
+    #    }
+    
+    if (!$episodeguide.Count) {
+      $warn = "No external IDs for '$($kp_info.Name)' in Kinopoisk info"
+      $result.Warnings.Add($warn)
+      Write-Warning "Export-KodiNfo: $warn"
+    }
+    $doc.episodeguide = [string](ConvertTo-Json $episodeguide -Compress)
+  }
   
   ### Ratings
     <#
@@ -193,65 +392,52 @@ function Export-KodiNfo {
   #  <thumb spoof="" cache="" aspect="discart" preview="">https://assets.fanart.tv/fanart/movies/18/moviedisc/the-fifth-element-512bfd3b590b1.png</thumb>
   #  <thumb spoof="" cache="" aspect="banner" preview="">https://assets.fanart.tv/fanart/movies/18/moviebanner/the-fifth-element-535fb3fbda854.jpg</thumb>
   
-  ### Poster
-  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
-  $node.SetAttribute('aspect', 'poster')
-  $node.SetAttribute('preview', $kp_info.poster.previewUrl)
-  $node.InnerText = $kp_info.poster.url
-  
-  ### Landscape
-  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
-  $node.SetAttribute('aspect', 'landscape')
-  $node.SetAttribute('preview', $kp_info.backdrop.previewUrl)
-  $node.InnerText = $kp_info.backdrop.url
-  
-  ### Logo
-  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
-  $node.SetAttribute('aspect', 'clearlogo')
-  #  $node.SetAttribute('preview', $kp_info.logo.previewUrl)
-  $node.InnerText = $kp_info.logo.url
-  
-  ### Для View: Media info
-  # ???
-  #  <fanart>
-  #  <thumb colors="" preview="https://image.tmdb.org/t/p/w780/ABJOcPC4SFzyaRpYOvRtHKiSbX.jpg">https://image.tmdb.org/t/p/original/ABJOcPC4SFzyaRpYOvRtHKiSbX.jpg</thumb>
-  #  </fanart>
-  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("fanart"))
-  $thumb_node = [Xml.XmlElement]$node.AppendChild($xml.CreateElement("thumb"))
-  $thumb_node.SetAttribute('preview', $kp_info.backdrop.previewUrl)
-  $thumb_node.InnerText = $kp_info.backdrop.url
-  
   # ???
   #  <art>
   #  <fanart>https://image.tmdb.org/t/p/original/ABJOcPC4SFzyaRpYOvRtHKiSbX.jpg</fanart>
   #  <poster>https://image.tmdb.org/t/p/original/tXl4LcgFAjDvD17ThWEabfAVNVY.jpg</poster>
   #  <thumb>image://video@%2fstorage%2fCOMP19%2fVideo%2fDisk_H%2f%d0%a0%d0%be%d1%81%d1%81%d0%b8%d1%8f%2fTelekinez.2023.WEB-DL.1080p.ELEKTRI4KA.UNIONGANG.mkv/</thumb>
   #  </art>
-  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("art"))
-  $node.AppendChild($xml.CreateElement("fanart")).InnerText = $kp_info.backdrop.url
-  $node.AppendChild($xml.CreateElement("poster")).InnerText = $kp_info.poster.url
   
+  $art_node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("art"))
   
-  ### IDs
-  #  if ($kp_info.externalId.imdb) {
-  #    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
-  #    $node.SetAttribute('type', 'imdb')
-  #    $node.InnerText = $kp_info.externalId.imdb
-  #  }
-  
-  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
-  $node.SetAttribute('type', 'kinopoisk')
-  #  $node.SetAttribute('default', 'true')
-  $node.InnerText = $kp_info.id
-  
-  #  <uniqueid type="imdb">tt0119116</uniqueid>
-  #  <uniqueid type="tmdb" default="true">18</uniqueid>
-  $kp_info.externalId.psobject.Properties.GetEnumerator() | % {
-    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("uniqueid"))
-    $node.SetAttribute('type', $_.Name)
-    $node.InnerText = $_.Value
+  ### Poster
+  if ($kp_info.poster.url) {
+    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
+    $node.SetAttribute('aspect', 'poster')
+    $node.SetAttribute('preview', $kp_info.poster.previewUrl)
+    $node.InnerText = $kp_info.poster.url
+    
+    $art_node.AppendChild($xml.CreateElement("poster")).InnerText = $kp_info.poster.url
   }
   
+  ### Landscape
+  if ($kp_info.backdrop.url) {
+    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
+    $node.SetAttribute('aspect', 'landscape')
+    $node.SetAttribute('preview', $kp_info.backdrop.previewUrl)
+    $node.InnerText = $kp_info.backdrop.url
+    
+    ### Для View: Media info
+    # ???
+    #  <fanart>
+    #  <thumb colors="" preview="https://image.tmdb.org/t/p/w780/ABJOcPC4SFzyaRpYOvRtHKiSbX.jpg">https://image.tmdb.org/t/p/original/ABJOcPC4SFzyaRpYOvRtHKiSbX.jpg</thumb>
+    #  </fanart>
+    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("fanart"))
+    $thumb_node = [Xml.XmlElement]$node.AppendChild($xml.CreateElement("thumb"))
+    $thumb_node.SetAttribute('preview', $kp_info.backdrop.previewUrl)
+    $thumb_node.InnerText = $kp_info.backdrop.url
+    
+    $art_node.AppendChild($xml.CreateElement("fanart")).InnerText = $kp_info.backdrop.url
+  }
+  
+  ### Logo
+  if ($kp_info.logo.url) {
+    $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("thumb"))
+    $node.SetAttribute('aspect', 'clearlogo')
+    #  $node.SetAttribute('preview', $kp_info.logo.previewUrl)
+    $node.InnerText = $kp_info.logo.url
+  }
   
   
   ### Genres
@@ -267,143 +453,399 @@ function Export-KodiNfo {
     $doc.AppendChild($xml.CreateElement("country")).InnerText = $_.name
   }
   
+  ### Trailers
+  if ($tmdb_trailers) {
+    $tmdb_trailers | select -First 1 | % {
+      $doc.AppendChild($xml.CreateElement("trailer")).InnerText = $_.KodiUrl
+    }
+  }
+  
+  ### generator
+<#
+    <generator>
+        <appname>dbprv.MultiMediaHelpers</appname>
+        <appversion>1.0.0</appversion>
+        <kodiversion>20</kodiversion>
+        <datetime>2024-02-23T19:26:24Z</datetime>
+    </generator>  
+  #>  
+  $node = [Xml.XmlElement]$doc.AppendChild($xml.CreateElement("generator"))
+  $node.AppendChild($xml.CreateElement("appname")).InnerText = $app_name
+  $node.AppendChild($xml.CreateElement("datetime")).InnerText = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') #o, s, u
   
   ### Save
-  $nfo_file = [io.fileinfo]$VideoFilePath
-  $nfo_path = Join-Path $nfo_file.DirectoryName ($nfo_file.BaseName + ".nfo")
+  $nfo_path = ''
+  if ($content_type -eq 'Movie') {
+    $nfo_path = Join-Path $MediaInfo.Directory ($MediaInfo.BaseName + ".nfo")
+  } elseif ($content_type -eq 'TVShow') {
+    $nfo_path = Join-Path $MediaInfo.Directory "tvshow.nfo"
+  } else {
+    throw "NOT IMPLEMENTED: content type '$content_type'"
+  }
+  
   $xml.Save($nfo_path)
   Write-Host "Export-KodiNfo: NFO file saved to '$nfo_path'" -fo Green
+  
+  return $result
 }
 
-
+### Public function:
 function Create-KodiMoviesNfo {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]
     [string]$Folder,
     [int]$Limit = [int]::MaxValue,
-    [string[]]$CountriesAny
+    [string[]]$CountriesAny,
+    [MediaContentType]$ContentType,
+    [switch]$SaveInfo
+    #    [switch]$Recurse
   )
   
-  Write-Host "Create-KodiMoviesNfo: begin"
-  
-  $Folder = (Resolve-Path $Folder).Path
-  Write-Host "Create-KodiMoviesNfo: Folder: '$Folder'"
-  
-  $config = Get-Config
-  $video_ext = @($config.VideoFilesExtensions | % { "*.$_" })
-  
-  $stat = [List[PSCustomObject]]::new()
-  
-  dir $Folder -Include $video_ext -Recurse | select -First $Limit | % {
-    $file = $_
-    Write-Host "Create-KodiMoviesNfo: process file '$($file.FullName)'"
+  Start-ScriptLogging
+  try {
+    Write-Host "Create-KodiMoviesNfo: begin"
     
-    $parsed_info = $null
-    #    $kp_info_all = @()
-    $success = $false
-    $message = ""
-    $parsed_name_translit = ""
-    #    $kp_info = $null
-    $kp_find_result = $null
+    $Folder = (Resolve-Path $Folder).Path
+    Write-Host "Create-KodiMoviesNfo: Folder: '$Folder'"
     
-    [FilmInfo]$parsed_info = Parse-FileName $file.Name
+    $config = Get-Config
+    $video_masks = @($config.VideoFilesExtensions | % { "*.$_" })
     
-    try {
-      
-      if ($parsed_info.Name) {
-        
-        Write-Host "Create-KodiMoviesNfo: Parsed file name:`r`n$(($parsed_info | fl * -Force | Out-String).Trim())`r`n" -fo Cyan
-        
-        $kp_find_result = Find-KinopoiskMovieSingle -Name $parsed_info.Name `
-                                                    -Year $parsed_info.Year `
-                                                    -CountriesAny $CountriesAny
-        
-        ### Если не нашли, пробуем транслитеровать имя eng->rus и искать снова:
-        if (!$kp_find_result.Success) {
-          $parsed_name_translit = Translit-EngToRus $parsed_info.Name
-          $kp_find_result = Find-KinopoiskMovieSingle -Name $parsed_name_translit `
-                                                      -Year $parsed_info.Year `
-                                                      -CountriesAny $CountriesAny
-        }
-        
-        if ($kp_find_result.Success) {
-          #          $kp_info = $kp_find_result.Result
-          Export-KodiNfo -VideoFilePath $file.FullName -KinopoiskInfo $kp_find_result.Result
-          $success = $true
-        } else {
-          throw "Can not find movie at Kinopoisk: '$($parsed_info.Name)'"
-          #          throw "Can not find movie in Kinopoisk results"
-        }
-        
+    
+    $stat = [List[PSCustomObject]]::new()
+    
+    $items = @(if ($ContentType -eq 'Movie') {
+        dir $Folder -Include $video_masks -File -Recurse -Force | select -First $Limit
+      } elseif ($ContentType -eq 'TVShow') {
+        ### Только каталоги с видеофайлами:
+        #$video_masks = @("*.mkv", "*.mp4")
+        dir $Folder -Directory -Force | ? {
+          ### Если в имени будут скобки [], надо экранировать:
+          $fn = [System.Management.Automation.WildcardPattern]::Escape($_.FullName)
+          $video_masks | % { dir "$fn\$_" }
+        } | select -First $Limit
+        #      dir $Folder -Directory -Exclude $config.ExcludeFolders -Recurse | select -First $Limit
       } else {
-        throw "Can not parse file name '$($file.Name)'"
+        throw "NOT IMPLEMENTED: content type '$ContentType'"
+      })
+    
+    Write-Verbose "Process $($items.Length) $($ContentType)(s)"
+    #  return
+    
+    $save_info_dir = Join-Path $Folder ".media_info"
+    if ($SaveInfo) {
+      if (!(Test-Path $save_info_dir -PathType Container)) {
+        (mkdir $save_info_dir -ea Stop).Attributes = 'Hidden'
+      }
+    }
+    
+    $items | % {
+      $item = $_
+      Write-Host "Create-KodiMoviesNfo: process item '$($item.FullName)'"
+      
+      $parsed_name = $null
+      $success = $false
+      $message = ""
+      $kp_search = $null
+      $tmdb_id = 0
+      $tmdb_search = $null
+      $tmdb_videos = $null
+      $export_result = $null
+      $warnings = [List[string]]::new()
+      $errors = [List[string]]::new()
+      
+      $media_info = [MediaInfo]@{
+        #        Item      = $item
+        Name      = $item.Name
+        BaseName  = $item.BaseName
+        Path      = $item.FullName
+        Directory = $(if ($item.PSIsContainer) { $item.FullName } else { $item.DirectoryName })
+        ContentType = $ContentType
       }
       
-    } catch {
-      Write-Host ("ERROR: " + ($_ | fl * -Force | Out-String).Trim()) -ForegroundColor 'Red'
-      $message = $_.Exception.Message
-    }
-    
-    $stat.Add([PSCustomObject][ordered]@{
-        Success  = $success
-        FilePath = $file.FullName
-        FileName = Split-Path $file.FullName -Leaf
-        ParsedName = $parsed_info.Name
-        ParsedNameTranslit = $parsed_name_translit
-        ParsedYear = $parsed_info.Year
-        #        KinopoiskFound = $kp_find_result.AllResults.Length
-        KinopoiskResult = $kp_find_result.Result
-        KinopoiskResultStr = "$($kp_find_result.Result.name) / $($kp_find_result.Result.alternativeName) / $($kp_find_result.Result.year)"
-        KinopoiskAllResults = $kp_find_result.AllResults
-        KinopoiskId = $kp_find_result.Result.id
-        Message  = $kp_find_result.Message
+      [ParsedName]$parsed_name = Parse-FileName -Name $item.Name -ContentType $ContentType
+      $media_info.ParsedName = $parsed_name
+      
+      ### Костыль для неправильно определяющихся сериалов
+      ### Прочитать имя и год из файла mmh.txt в папке сериала
+      if ($ContentType -eq 'TVShow') {
+        $mmh_file_path = Join-Path $item.FullName "mmh.txt"
+        if (Test-Path -LiteralPath $mmh_file_path -PathType Leaf) {
+          Write-Verbose "Create-KodiMoviesNfo: process file mmh.txt"
+          $mmh_file_info = gc -LiteralPath $mmh_file_path -First 1
+          [ParsedName]$parsed_name_from_mmh_file = Parse-FileName -Name $mmh_file_info -ContentType $ContentType
+          if ($parsed_name_from_mmh_file) {
+            if ($parsed_name_from_mmh_file.Name) {
+              Write-Verbose "Create-KodiMoviesNfo: set parsed name from mmh file"
+              $parsed_name.Name = $parsed_name_from_mmh_file.Name
+            }
+            if ($parsed_name_from_mmh_file.Year) {
+              Write-Verbose "Create-KodiMoviesNfo: set parsed yaer from mmh file"
+              $parsed_name.Year = $parsed_name_from_mmh_file.Year
+            }
+          }
+        }
       }
-    )
+      
+      
+      # !!! -EnumsAsStrings - no in PS5
+      Write-Verbose ("`r`n=== media_info:`r`n" + ($media_info | ConvertTo-Json -Depth 5 | Out-String).Trim())
+      
+      try {
+        
+        if ($parsed_name.Name) {
+          
+          Write-Host "Create-KodiMoviesNfo: Parsed item name:`r`n$(($parsed_name | fl * -Force | Out-String).Trim())`r`n" -fo Cyan
+          
+          $kp_search = Find-KinopoiskMovieSingle -Name $parsed_name.Name `
+                                                 -Year $parsed_name.Year `
+                                                 -CountriesAny $CountriesAny `
+                                                 -Type $ContentType `
+                                                 -TryTranslitName
+          
+          $media_info.KP.Search = $kp_search.Result
+          
+          if ($kp_search.Success) {
+            
+            $tmdb_id = $kp_search.Result.externalId.tmdb
+            $kp_year = $media_info.KP.Search.year
+            
+            ### Если TMDB ID нет в результате Кинопоиска, ищем на TMDB, добавляем ID
+            ### TMDB ID необходим для инфы об эпизодах сериалов и для трейлеров
+            if (!$tmdb_id) {
+              $tmdb_search = $null
+              
+              ### Перебираем все имена из результата Кинопоиска
+              
+              #@($j.kp.Search.name, $j.kp.Search.alternativeName, $j.kp.Search.enName, $j.kp.Search.names | %{$_})
+              
+              $names = [List[string]]::new()
+              
+              $kp_search.Result.name, $kp_search.Result.alternativeName, $kp_search.Result.enName `
+              | % { "$_".Trim() } | ? { $_ } | % { $names.Add($_) }
+              
+              $kp_search.Result.names.name | % { "$_".Trim() } | ? { $_ } | ? { $_ -notin $names } | % {
+                $names.Add($_)
+              }
+              $kp_search.Result.internalNames | % { "$_".Trim() } | ? { $_ } | ? { $_ -notin $names } | % {
+                $names.Add($_)
+              }
+              if (!$names) {
+                throw "Empty names list for TMDB search"
+              }              
+              Write-Verbose "Create-KodiMoviesNfo: search TMDB by names($($names.Count)): [`r`n$($names -join "`r`n")`r`n]"
+              
+              foreach ($n in $names) {
+                Write-Verbose "Create-KodiMoviesNfo: search TMDB by name '$n'"
+                
+                ### Года Кинопоиска и TMDB могут не совпадать (например "Иные")
+                
+                $params = @{
+                  Name = $n
+                  Year = $kp_search.Result.year
+                }
+                
+                if ($ContentType -eq 'Movie') {
+                  $params.OriginalName = $kp_search.Result.alternativeName
+                  $tmdb_search = Find-TmdbMovieSingle @params -ErrorAction Continue
+                } elseif ($ContentType -eq 'TVShow') {
+                  $params.OriginalName = $kp_search.Result.name
+                  $tmdb_search = Find-TmdbTVShowSingle @params -ErrorAction Continue
+                } else {
+                  throw "NOT IMPLEMENTED: for content type '$ContentType'"
+                }
+                
+                if ($tmdb_search.Success -and $tmdb_search.Result.id) {
+                  Write-Host "TMDB result:`r`n$($tmdb_search.Result | select id, title, name, original_title, original_name, original_language, release_date, year | ft -AutoSize | Out-String)" -fo Cyan
+                  $tmdb_id = $tmdb_search.Result.id
+                  $media_info.TMDB.Search = $tmdb_search.Result
+                  Add-Member -InputObject $kp_search.Result.externalId -MemberType NoteProperty -Name tmdb -Value $tmdb_id -Force
+                  break
+                } else {
+                  #                  Write-Host "DEBUG Create-KodiMoviesNfo Find-TmdbTVShowSingle error"
+                  $warnings.Add("TMDB search: $($tmdb_search.Message)")
+                }
+              }
+            }
+            
+            ### Add trailer
+            if ($tmdb_id) {
+              $media_info.TMDB.Id = $tmdb_id
+              $media_info.TMDB.Trailers = @(Get-TmdbTrailers -Id $tmdb_id -ContentType $ContentType)
+            } else {
+              Write-Warning "Create-KodiMoviesNfo: not found in TMDB"
+            }
+            
+            $export_result = Export-KodiNfo -MediaInfo $media_info
+            
+            $success = $true
+          } else {
+            throw "Can not find movie at Kinopoisk: '$($parsed_name.Name)'"
+            #          throw "Can not find movie in Kinopoisk results"
+          }
+          
+        } else {
+          throw "Can not parse item name '$($item.Name)'"
+        }
+        
+      } catch {
+        Write-Host ("ERROR: " + ($_ | fl * -Force | Out-String).Trim()) -ForegroundColor 'Red'
+        $message = $_.Exception.Message
+      }
+      
+      $season_str = if ($parsed_name.Season) { " / " + ("S{0:d2}" -f $parsed_name.Season) } else { '' }
+      $stat.Add([PSCustomObject][ordered]@{
+          Success  = $success
+          ItemPath = $item.FullName
+          ItemName = Split-Path $item.FullName -Leaf
+          ParsedName = $parsed_name.Name
+          NameTranslit = $kp_search.NameTranslit
+          ParsedYear = $parsed_name.Year
+          #        KinopoiskFound = $kp_find_result.AllResults.Length
+          KinopoiskResult = $kp_search.Result
+          KinopoiskResultStr = "$($kp_search.Result.name) / $($kp_search.Result.alternativeName) / $($kp_search.Result.year)$($season_str)"
+          KinopoiskAllResults = $kp_search.AllResults
+          KinopoiskId = $kp_search.Result.id
+          TmdbId = $tmdb_id
+          Message  = $kp_search.Message
+          ExportResult = $export_result
+          Warnings = $warnings
+          Errors   = $errors
+        }
+      )
+      
+      if ($SaveInfo) {
+        Out-File -InputObject (ConvertTo-Json $media_info -Depth 5) `
+                 -LiteralPath (Join-Path $save_info_dir "$($media_info.BaseName).json") `
+                 -enc utf8 -Force
+        
+      }
+      
+    } ### item
     
-  } ### dir
-  
-  Write-Host "`r`n=== RESULTS ===" -fo Magenta
-  
-  $ok = @($stat | ? { $_.Success })
-  if ($ok) {
-    Write-Host "files ($($ok.Count)):" -ForegroundColor Green
-    $ok | % {
-      Write-Host "`r`n==="
-      Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResult, KinopoiskAllResults | fl * | Out-String).Trim())" -fo Green
-      #      if ($_.KinopoiskAllResults -and $_.KinopoiskResults.Length) {
-      Write-Host "Kinopoi all results:`r`n$(($_.KinopoiskAllResults `
-          | select id, name, alternativeName, type, year, @{ Name = "CountriesAll"; Expression = { $_.countries.name -join ',' } } `
-          | ft -AutoSize | Out-String))" -fo Cyan
-      #      }
+    Write-Host "`r`n=== RESULTS ===" -fo Magenta
+    
+    $ok = @($stat | ? { $_.Success })
+    if ($ok) {
+      Write-Host "Processed items ($($ok.Count)):" -ForegroundColor Green
+      $ok | % {
+        Write-Host "`r`n==="
+        Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResult, KinopoiskAllResults | fl * | Out-String).Trim())" -fo Green
+        #      if ($_.KinopoiskAllResults -and $_.KinopoiskResults.Length) {
+        Write-Host "`r`nKinopoisk all results:`r`n$(($_.KinopoiskAllResults `
+            | select order, id, name, alternativeName, type, year, @{ Name = "CountriesAll"; Expression = { $_.countries.name -join ',' } } `
+            | ft -AutoSize | Out-String).TrimEnd())" -fo Cyan
+        #      }
+      }
+      
+      Write-Host "`r`nShort list:" -fo Green
+      Write-Host "$(($ok | select ParsedName, NameTranslit, ItemName, KinopoiskResultStr, Message | ft -auto | Out-String).TrimEnd())" -fo Green
     }
     
-    @{ Name = "PropertyName"; Expression = { $_.Property.Value } }
-    #| % { Add-Member -InputObject $_ -PassThru -MemberType NoteProperty -Name Title       -Value $_.GetTitle($cc)       } `
+    $warn = @($stat | ? { $_.Warnings -or $_.ExportResult.Warnings.Count })
+    if ($warn) {
+      Write-Host "`r`n=== WARNINGS ===" -fo Yellow
+      $warn | % {
+        Write-Host "`r`nItemPath: $($_.ItemPath)" -fo Yellow
+        if ($_.Warnings) {
+          Write-Host "Process warnings:`r`n$($_.Warnings -join "`r`n")" -fo Yellow
+        }
+        if ($_.ExportResult.Warnings) {
+          Write-Host "Export warnings:`r`n$($_.ExportResult.Warnings -join "`r`n")" -fo Yellow
+        }
+      }
+      #      Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResult, KinopoiskAllResults | fl * | Out-String).Trim())" -fo Yellow
+    } else {
+      Write-Host "`r`nNo warnings" -fo Green
+    }
     
-    Write-Host "`r`nShort list:" -fo Green
-    Write-Host "$($ok | select ParsedName, ParsedNameTranslit, FileName, KinopoiskResultStr, Message | ft -auto | Out-String)" -fo Green
+    $err = @($stat | ? { !$_.Success })
+    if ($err) {
+      Write-Host "`r`nNot processed items ($($err.Count)):" -ForegroundColor Red
+      $err | % {
+        Write-Host "`r`n==="
+        Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResult, KinopoiskAllResults | fl * | Out-String).Trim())" -fo red
+        if ($_.KinopoiskResults -and $_.KinopoiskResults.Length) {
+          Write-Host "Kinopoisk results:`r`n$(($_.KinopoiskResults | select id, name, alternativeName, type, year | ft -AutoSize | Out-String).Trim())" -fo Cyan
+        }
+      }
+      
+      Write-Host "`r`nShort list:" -fo Red
+      Write-Host "$($err | select ParsedName, NameTranslit, ItemName, Message | ft -auto | Out-String)" -fo red
+      
+    }
+    
+    Write-Host "`r`n=== TOTALS ==="
+    Write-Host "Total items   : $($stat.Count)" -fo White
+    Write-Host "Processed     : $($ok.Count)" -ForegroundColor Green
+    Write-Host "With warnings : $($warn.Count)" -ForegroundColor Yellow
+    Write-Host "Not processed : $($err.Count)" -ForegroundColor Red
+    
+  } finally {
+    Show-NetworkStat
+    
+    Stop-ScriptLogging
+    if ($SaveInfo) {
+      Copy-ScriptLog -DestiantionDir "$save_info_dir\logs" -ErrorAction Continue
+    }
+    
   }
   
-  $err = @($stat | ? { !$_.Success })
-  if ($err) {
-    Write-Host "`r`nNot processed files ($($err.Count)):" -ForegroundColor Red
-    $err | % {
-      Write-Host "`r`n==="
-      Write-Host "$(($_ | select * -ExcludeProperty KinopoiskResult, KinopoiskAllResults | fl * | Out-String).Trim())" -fo red
-      if ($_.KinopoiskResults -and $_.KinopoiskResults.Length) {
-        Write-Host "Kinopoisk results:`r`n$(($_.KinopoiskResults | select id, name, alternativeName, type, year | ft -AutoSize | Out-String).Trim())" -fo Cyan
-      }
+}
+
+function Get-KodiNfo {
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]$Folder,
+    [int]$Limit = [int]::MaxValue
+  )
+  
+  dir $Folder -Include @("*.nfo") -Recurse -File | select -First $Limit | % {
+    $file = $_
+    Write-Verbose "Get-TVShowsKodiNfo: process file '$($file.FullName)'"
+    $xml = [xml](gc -LiteralPath $file.FullName -Raw -ErrorAction 'Stop')
+    $root = $xml.DocumentElement
+    $ht = [ordered]@{
+      FilePath      = $file.FullName
+      DirName       = $file.Directory.Name
+      title         = $root.title
+      originaltitle = $root.originaltitle
+      year          = $root.year
+      season        = $root.season
+      has_trailer       = [bool]$root.trailer
     }
     
-    Write-Host "`r`nShort list:" -fo Red
-    Write-Host "$($err | select ParsedName, ParsedNameTranslit, FileName, Message | ft -auto | Out-String)" -fo red
+    $xml.DocumentElement.uniqueid | % {
+      $ht["id_$($_.GetAttribute('type'))"] = $_.innerText
+    }
     
+    [PSCustomObject]$ht
+  }
+}
+
+function Check-KodiNfo {
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]$Folder,
+    [int]$Limit = [int]::MaxValue
+  )
+  
+  Write-Host "`r`n=== Check Kodi Nfo in '$folder' ==="
+  
+  $result = Get-KodiNfo -Folder $folder -Limit $limit
+  Write-Host "All Nfo:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
+  
+  $no_trailer = @($result | ? { !$_.has_trailer })
+  if ($no_trailer) {
+    Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo yellow
   }
   
-  Write-Host "`r`n === TOTALS ==="
-  Write-Host "Total files   : $($stat.Count)"
-  Write-Host "Processed     : $($ok.Count)" -ForegroundColor Green
-  Write-Host "Not processed : $($err.Count)" -ForegroundColor Red
+  $no_tmdb_id = @($result | ? { !$_.id_tmdb })
+  if ($no_tmdb_id) {
+    Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
+  }
   
 }

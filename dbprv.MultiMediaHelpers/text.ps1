@@ -24,13 +24,17 @@ function Translit-EngToRus {
   }
   
   $map = [ordered]@{
+    'iya' = 'ия'
+    'iyu' = 'ию'    
     'jsh' = 'щ'
     'sch' = 'щ'
     'yiy' = 'ый'
     'ch'  = 'ч'
     'eh'  = 'э'
+    'ey'  = 'ей'
     'hh'  = 'ъ'
     'ih'  = 'ы'
+    'iy'  = 'ий'
     'ja'  = 'я'
     'je'  = 'ё'
     'jh'  = 'ь'
@@ -39,6 +43,7 @@ function Translit-EngToRus {
     'sh'  = 'ш'
     'ts'  = 'ц'
     'ya'  = 'я'
+    'yj'  = 'ый'    
     'yo'  = 'ё'
     'yu'  = 'ю'
     'zh'  = 'ж'

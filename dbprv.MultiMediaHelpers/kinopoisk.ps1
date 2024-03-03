@@ -1,14 +1,28 @@
 ﻿### Includes:
 . "$PSScriptRoot\network.ps1"
-#. "$PSScriptRoot\text.ps1"
+. "$PSScriptRoot\text.ps1"
 
-### Variables:
 
+### Types:
 class FindKinopoiskResult {
+  [string]$Name
+  [string]$NameTranslit
+  [int]$Year
+  [string[]]$CountriesAny
+  [string]$Type
   $Result = $null
   $AllResults = @()
   [bool]$Success = $false
   [string]$Message = ""
+}
+
+### Variables:
+$kinopoisk_content_types = @{
+  'movie'     = @('movie', 'cartoon')
+  'film'      = @('movie', 'cartoon')
+  'tvshow'    = @('tv-series', 'animated-series')
+  'tv-series' = @('tv-series', 'animated-series')
+  'tvseries'  = @('tv-series', 'animated-series')
 }
 
 ### Functions:
@@ -22,7 +36,7 @@ function Invoke-KinopoiskRequest {
     [string]$Url,
     [ValidateSet('JSON', 'Text', IgnoreCase = $true)]
     [string]$ResponseType = 'JSON',
-    [hashtable]$Query = @{ }
+    [System.Collections.Specialized.OrderedDictionary]$Query = @{ } ### ordered - обязательно, чтобы был одинаковый порядок параметров
   )
   Write-Verbose "Invoke-KinopoiskRequest: begin"
   Write-Verbose "Invoke-KinopoiskRequest: Url: '$Url'"
@@ -52,24 +66,38 @@ function Invoke-KinopoiskRequest {
 ### Возвращает все результаты поиска:
 function Find-KinopoiskMovie {
   [CmdletBinding()]
-  param (
+  param
+  (
     [Parameter(Mandatory = $true,
                ValueFromPipeline = $true)]
-    [string]$Name
+    [string]$Name,
+    [int]$Limit = 10,
+    [ValidateSet('movie', 'film', 'tvshow', 'tv-series', 'tvseries', IgnoreCase = $true)]
+    [string]$Type = 'movie'
   )
   
   process {
     Write-Verbose "Find-KinopoiskMovie: Name: '$Name'"
-    Invoke-KinopoiskRequest -Url "movie/search?page=1&limit=10&query=$([URI]::EscapeUriString($Name))" `
-    | select -ExpandProperty docs | ? { $_.type -eq 'movie' }
     
-    ### !В PS5, PS7 разный порядок, из-за этого разный URL и ключ кэша:
-    #    Invoke-KinopoiskRequest -Url 'movie/search' -Query @{
-    #      page  = 1
-    #      limit = 10
-    #      query = $Name
-    #      #      type = 'movie' ### not work
-    #    } | select -ExpandProperty docs | ? { $_.type -eq 'movie' }
+    if (!$kinopoisk_content_types.ContainsKey($Type)) {
+      throw "Invalid Kinopoisk content type '$Type'"
+    }
+    
+    $kp_types = $kinopoisk_content_types[$Type]
+    
+    #    Invoke-KinopoiskRequest -Url "movie/search?page=1&limit=$($Limit)&query=$([URI]::EscapeUriString($Name))" `
+    #    | select -ExpandProperty docs | ? { $_.type -eq $Type }
+    
+    ### [ordered] обязательно, иначе в PS5, PS7 будет разный порядок параметров, из-за этого разный URL и ключ кэша:
+    $order = 100
+    Invoke-KinopoiskRequest -Url 'movie/search' -Query ([ordered]@{
+        page  = 1
+        limit = $Limit
+        query = [URI]::EscapeUriString($Name)
+      }) | select -ExpandProperty docs | ? { $_.type -in $kp_types } | % {
+      Add-Member -InputObject $_ -MemberType NoteProperty -Name order -Value ($order--)
+      $_
+    }
   }
 }
 
@@ -81,114 +109,139 @@ function Find-KinopoiskMovieSingle {
                ValueFromPipeline = $true)]
     [string]$Name,
     [int]$Year,
-    [string[]]$CountriesAny
+    [string[]]$CountriesAny,
+    [ValidateSet('movie', 'film', 'tvshow', 'tv-series', 'tvseries', IgnoreCase = $true)]
+    [string]$Type = 'movie',
+    [switch]$TryTranslitName
   )
   
-  $kp_info_all = @(Find-KinopoiskMovie -Name $Name)
+  Write-Verbose "Find-KinopoiskMovieSingle: Name: '$Name', Type: '$Type', Year: $Year, CountriesAny: [$CountriesAny], TryTranslitName: $TryTranslitName"
+  
+  if (!$Year) {
+    Write-Warning "Find-KinopoiskMovieSingle: Year is not specified, result may be inaccurate"
+  }
+  
+  $kp_info_all = @(Find-KinopoiskMovie -Name $Name -Type $Type | ? {
+      $_.name
+      ### Разница в длине имен не более 5:
+#      $_.name -and ([math]::Abs($Name.Length - $_.name.Length) -le 5) ### !!!
+    })
+  
+  $result = [FindKinopoiskResult]@{
+    Name         = $Name
+    Year         = $Year
+    CountriesAny = $CountriesAny
+    Type         = $Type
+  }
   
   ### Если не нашли, пробуем транслитеровать имя eng->rus и искать снова:
-  #  if (!$kp_info_all) {
-  #    $parsed_name_translit = Translit-EngToRus $Name
-  #    $kp_info_all = @(Find-KinopoiskMovie -Name $parsed_name_translit)
-  #  }
-  
-  $result = [FindKinopoiskResult]::new()
-  
   if (!$kp_info_all) {
-    $result.Message = "Cannot find movie '$($Name)'"
-    return $result
+    if ($TryTranslitName) {
+      Write-Verbose "Find-KinopoiskMovieSingle:"
+      $name_translit = Translit-EngToRus $Name
+      Write-Verbose "Find-KinopoiskMovieSingle: try find by transliterated name (begin) '$name_translit'"
+      $result = Find-KinopoiskMovieSingle -Name $name_translit -Year $Year -CountriesAny $CountriesAny -Type $Type
+      $result.NameTranslit = $name_translit
+      $result.Message += ", name transliterated"
+      return $result
+    } else {
+      $result.Message = "Cannot find movie '$($Name)'"
+      Write-Verbose "Find-KinopoiskMovieSingle: $($result.Message)"
+      return $result
+    }
   }
   
   $result.AllResults = $kp_info_all
-  #  if ($kp_info_all) {
   
-  Write-Host "Find-KinopoiskMovieSingle: Found movie(s) at Kinopoisk:`r`n$($kp_info_all | select id, name, alternativeName, type, year, countries | ft -AutoSize | Out-String)" -fo Cyan
+  Write-Host "Find-KinopoiskMovieSingle: Before filtration:`r`n$($kp_info_all | select id, name, alternativeName, type, year, countries | ft -AutoSize | Out-String)" -fo Cyan
   
-  
-#  $message = ""
-  
-  ### Найден только 1 фильм:
-  if ($kp_info_all.Length -eq 1) {
-    $result.Result = $kp_info_all[0]
-    $result.Success = $true
-    $result.Message = "Found single result"
+  ### Фильтруем по странам:
+  if ($CountriesAny) {
+    $kp_info_all = @($kp_info_all | ? {
+        $kp_info_countries = @($_.countries.name)
+        $matched_countries = @($CountriesAny | ? { $_ -in $kp_info_countries })
+        [bool]$matched_countries
+      })
     
-  } else {
-    
-    ### Ищем по году +-1:            
-    if ($Year) {
-      #        $parsed_year = [int]($Year)
-      #              Write-Host "parsed_year[$($parsed_year.GetType())]: [$parsed_year]" -fo Cyan
-      $years = @($Year, ($Year - 1), ($Year + 1)) ### !!! скобки обязательно
-      #              Write-Host "years[$($years.GetType())]: [$years]" -fo Cyan
-      foreach ($y in $years) {
-        Write-Host "Find by year $y" -fo Cyan
-        $delta = $y - $Year
-        $delta_msg = if ($delta) { " ($('{0:+#;-#;0}' -f $delta))" } else { '' }
-        $kp_info_year = @($kp_info_all | ? { $_.year -eq $y })
-        if ($kp_info_year) {
-          if ($kp_info_year.Length -eq 1) {
-            #            $message = "Found movie by year $year$delta_msg"
-            #            Write-Host "Find-KinopoiskMovieSingle: $message" -fo Green
-            
-            ### Check countries:
-            if ($CountriesAny) {
-              $kp_info_countries = @($kp_info_year[0].countries.name)
-              
-              $matched_countries = @($CountriesAny | ? { $_ -in $kp_info_countries })
-              if ($matched_countries) {
-                $result.Result = $kp_info_year[0]
-                $result.Success = $true
-                $result.Message = "Found movie by year $($y)$delta_msg and countries: $($matched_countries -join ", ")"
-                break                
-              }
-              
-            } else {
-              $result.Result = $kp_info_year[0]
-              $result.Success = $true
-              $result.Message = "Found movie by year $($y)$delta_msg"
-              break
-            }
-            
-          } else {
-            if ($CountriesAny) {
-              $kp_info_countries = @($kp_info_year[0].countries.name)
-              
-              $matched_countries = @($CountriesAny | ? { $_ -in $kp_info_countries })
-              if ($matched_countries) {
-                $result.Result = $kp_info_year[0]
-                $result.Success = $true
-                $result.Message = "Found multiple by year $($y)$delta_msg, select 1st and countries: $($matched_countries -join ", ")"
-                break
-              }
-              
-            } else {
-              $result.Result = $kp_info_year[0]
-              $result.Success = $true
-              $result.Message = "Found multiple by year $($y)$delta_msg, select 1st"
-              break
-            }
-            
-          }
+    if (!$kp_info_all) {
+      if ($TryTranslitName) {
+        $name_translit = Translit-EngToRus $Name
+        Write-Verbose "Find-KinopoiskMovieSingle: try find by transliterated name (country) '$name_translit'"
+        $result = Find-KinopoiskMovieSingle -Name $name_translit -Year $Year -CountriesAny $CountriesAny -Type $Type
+        $result.NameTranslit = $name_translit
+        $result.Message += ", name transliterated"
+        return $result
+      } else {
+        $result.Message = "Cannot find movie '$($Name)' with filter by any country: [$($CountriesAny -join ", ")]"
+        return $result
+      }
+    }
+  }
+  
+  ### Ищем по году +-1:            
+  if ($Year) {
+    $years = @($Year, ($Year - 1), ($Year + 1)) ### !!! скобки обязательно
+    foreach ($y in $years) {
+      Write-Host "Find by year $y" -fo Cyan
+      $delta = $y - $Year
+      $delta_msg = if ($delta) { " ($('{0:+#;-#;0}' -f $delta))" } else { '' }
+      $kp_info_year = @($kp_info_all | ? { $_.year -eq $y })
+      if ($kp_info_year) {
+        if ($kp_info_year.Length -eq 1) {
+          $result.Result = $kp_info_year[0]
+          $result.Success = $true
+          $result.Message = "Found single by year $($y)$delta_msg"
+          return $result
+          #          break
+        } else {
+          $result.Result = $kp_info_year[0]
+          $result.Success = $true
+          $result.Message = "Found multiple by year $($y)$delta_msg, select 1st"
+          return $result
+          #          break
         }
       }
-      
-    } else {
-      $result.Message = "NOT IMPLEMENTED: no year"
-      #      throw "Find-KinopoiskMovieSingle: NOT IMPLEMENTED: no year"
     }
     
+    if ($TryTranslitName) {
+      $name_translit = Translit-EngToRus $Name
+      Write-Verbose "Find-KinopoiskMovieSingle: try find by transliterated name (year) '$name_translit'"
+      $result = Find-KinopoiskMovieSingle -Name $name_translit -Year $Year -CountriesAny $CountriesAny -Type $Type
+      $result.NameTranslit = $name_translit
+      $result.Message += ", name transliterated"
+      return $result
+    } else {
+      $result.Message = "Cannot find movie '$($Name)' by year $Year"
+      return $result
+    }
+  }
+  
+  ### Если результат еще не установлен
+  if ($kp_info_all -and (!$result.Success)) {
+    if ($kp_info_all.Length -eq 1) {
+      $result.Result = $kp_info_all[0]
+      $result.Success = $true
+      $result.Message = "Found single after filtration"
+    } else {
+      $result.Result = $kp_info_all | Sort-Object year, order -Descending | select -First 1
+      $result.Success = $true
+      $result.Message = "Found multiple after filtration, select 1st"
+    }
+  }
+  
+  if (!$result.Success) {
+    if ($TryTranslitName) {
+      $name_translit = Translit-EngToRus $Name
+      Write-Verbose "Find-KinopoiskMovieSingle: try find by transliterated name (end) '$name_translit'"
+      $result = Find-KinopoiskMovieSingle -Name $name_translit -Year $Year -CountriesAny $CountriesAny -Type $Type
+      $result.NameTranslit = $name_translit
+      $result.Message += ", name transliterated"
+      return $result
+    } else {
+      $result.Message = "Cannot find movie '$($Name)' after filtering"
+      #      return $result
+    }
   }
   
   return $result
-  
-  
-  #  Add-Member -InputObject $result -MemberType NoteProperty -Name FindMessage -Value $message
-  
-  
-  #  } else {
-  #    throw "Can not find movie at Kinopoisk: '$($Name)'"
-  #  }
-  
-  
 }

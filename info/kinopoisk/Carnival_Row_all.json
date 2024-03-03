@@ -1,0 +1,792 @@
+{
+  "docs": [
+    {
+      "internalNames": [
+        "Карнивал Роу",
+        "Carnival Row",
+        "狂欢街命案",
+        "致命狂欢街",
+        "קרנבל רו",
+        "คาร์นิวัล โรว์"
+      ],
+      "name": "Карнивал Роу",
+      "alternativeName": "Carnival Row",
+      "enName": "",
+      "year": 2019,
+      "genres": [
+        {
+          "name": "фэнтези"
+        },
+        {
+          "name": "триллер"
+        },
+        {
+          "name": "драма"
+        },
+        {
+          "name": "криминал"
+        },
+        {
+          "name": "детектив"
+        }
+      ],
+      "countries": [
+        {
+          "name": "США"
+        }
+      ],
+      "releaseYears": [
+        {
+          "start": 2019,
+          "end": 2023
+        }
+      ],
+      "id": 891433,
+      "names": [
+        {
+          "name": "Карнивал Роу"
+        },
+        {
+          "name": "Carnival Row"
+        },
+        {
+          "name": "狂欢街命案",
+          "language": "CN",
+          "type": null
+        },
+        {
+          "name": "致命狂欢街",
+          "language": "CN",
+          "type": null
+        },
+        {
+          "name": "קרנבל רו",
+          "language": "IL",
+          "type": null
+        },
+        {
+          "name": "คาร์นิวัล โรว์",
+          "language": "TH",
+          "type": null
+        }
+      ],
+      "type": "tv-series",
+      "description": "Неовикторианский мегаполис Бург в опасности — идет война. Фэнтезийные существа-беженцы, нашедшие здесь приют, гибнут от рук неведомого маньяка. За дело берутся потасканный детектив Райкрофт и фея Виньетт. Вместе им предстоит восстановить равновесие мира и поймать маньяка-убийцу.",
+      "shortDescription": "Угрюмый полицейский и фея-сорвиголова — против загадочных темных сил. Стильный неонуар с социальным подтекстом",
+      "logo": {
+        "url": "https://avatars.mds.yandex.net/get-ott/374297/2a0000017d5093d636d19bb485885cba17b8/orig"
+      },
+      "poster": {
+        "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/4303601/96aac89e-9073-4d7a-ad4b-293a785ba969/orig",
+        "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/4303601/96aac89e-9073-4d7a-ad4b-293a785ba969/x1000"
+      },
+      "backdrop": {
+        "url": "https://imagetmdb.com/t/p/original/tQZtXSYDzQUaASZYMfakoNo9DC3.jpg",
+        "previewUrl": "https://imagetmdb.com/t/p/w500/tQZtXSYDzQUaASZYMfakoNo9DC3.jpg"
+      },
+      "rating": {
+        "kp": 7.196,
+        "imdb": 7.7,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": null
+      },
+      "votes": {
+        "kp": 40429,
+        "imdb": 81569,
+        "filmCritics": 0,
+        "russianFilmCritics": 1,
+        "await": 2784
+      },
+      "movieLength": 0,
+      "isSeries": true,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": 56,
+      "ratingMpaa": null,
+      "ageRating": 18,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 2,
+      "status": "completed",
+      "internalRating": 7.196,
+      "internalVotes": 40429,
+      "externalId": {
+        "imdb": "tt0489974",
+        "tmdb": 90027,
+        "kpHD": "474a3e69b9edcfe5a9716fcbf6437324"
+      }
+    },
+    {
+      "internalNames": [
+        "Skid Row Carnival of Love: Family"
+      ],
+      "name": "",
+      "alternativeName": "Skid Row Carnival of Love: Family",
+      "enName": "",
+      "year": 2018,
+      "genres": [
+        {
+          "name": "документальный"
+        },
+        {
+          "name": "короткометражка"
+        }
+      ],
+      "countries": [
+        {
+          "name": "США"
+        }
+      ],
+      "releaseYears": [],
+      "id": 1421945,
+      "names": [
+        {
+          "name": "Skid Row Carnival of Love: Family",
+          "language": null,
+          "type": "Original title on kinopoisk"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": null,
+      "poster": {
+        "url": null,
+        "previewUrl": null
+      },
+      "backdrop": {
+        "url": null,
+        "previewUrl": null
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 0,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 0,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 0,
+      "internalVotes": 0,
+      "externalId": {
+        "kpHD": null
+      }
+    },
+    {
+      "internalNames": [
+        "Карнавал",
+        "Carnival"
+      ],
+      "name": "Карнавал",
+      "alternativeName": "Carnival",
+      "enName": "",
+      "year": 1946,
+      "genres": [
+        {
+          "name": "драма"
+        },
+        {
+          "name": "мелодрама"
+        }
+      ],
+      "countries": [
+        {
+          "name": "Великобритания"
+        }
+      ],
+      "releaseYears": [],
+      "id": 202454,
+      "names": [
+        {
+          "name": "Карнавал",
+          "language": "RU",
+          "type": "Russian title on kinopoisk"
+        },
+        {
+          "name": "Carnival",
+          "language": null,
+          "type": "Original title on kinopoisk"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": {
+        "url": null,
+        "previewUrl": null
+      },
+      "poster": {
+        "url": "https://avatars.mds.yandex.net/get-kinopoisk-image/4716873/2ca2fbdc-6221-4c5e-a750-954d7405775a/orig",
+        "previewUrl": "https://avatars.mds.yandex.net/get-kinopoisk-image/4716873/2ca2fbdc-6221-4c5e-a750-954d7405775a/x1000"
+      },
+      "backdrop": {
+        "url": "https://imagetmdb.com/t/p/original/hnPxFRujCk6E41M9FMgJgV9RxWr.jpg",
+        "previewUrl": "https://imagetmdb.com/t/p/w500/hnPxFRujCk6E41M9FMgJgV9RxWr.jpg"
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 5.9,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 13,
+        "imdb": 163,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 93,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 5.9,
+      "internalVotes": 13,
+      "externalId": {
+        "kpHD": null,
+        "imdb": "tt0038398",
+        "tmdb": 258789
+      }
+    },
+    {
+      "internalNames": [
+        "Carnival"
+      ],
+      "name": "",
+      "alternativeName": "Carnival",
+      "enName": "",
+      "year": 2001,
+      "genres": [
+        {
+          "name": "короткометражка"
+        },
+        {
+          "name": "драма"
+        }
+      ],
+      "countries": [
+        {
+          "name": "США"
+        }
+      ],
+      "releaseYears": [],
+      "id": 109143,
+      "names": [
+        {
+          "name": "Carnival"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": {
+        "url": null
+      },
+      "poster": {
+        "url": null,
+        "previewUrl": null
+      },
+      "backdrop": {
+        "url": null,
+        "previewUrl": null
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 6.2,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 0,
+        "imdb": 12,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 10,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 6.2,
+      "internalVotes": 12,
+      "externalId": {
+        "imdb": "tt0337914",
+        "kpHD": null
+      }
+    },
+    {
+      "internalNames": [
+        "Карнавал",
+        "Carnival"
+      ],
+      "name": "Карнавал",
+      "alternativeName": "Carnival",
+      "enName": "",
+      "year": 1921,
+      "genres": [
+        {
+          "name": "драма"
+        }
+      ],
+      "countries": [
+        {
+          "name": "Великобритания"
+        }
+      ],
+      "releaseYears": [],
+      "id": 169656,
+      "names": [
+        {
+          "name": "Карнавал",
+          "language": "RU",
+          "type": "Russian title on kinopoisk"
+        },
+        {
+          "name": "Carnival",
+          "language": null,
+          "type": "Original title on kinopoisk"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": null,
+      "poster": {
+        "url": null,
+        "previewUrl": null
+      },
+      "backdrop": {
+        "url": null,
+        "previewUrl": null
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 11,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 0,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 0,
+      "internalVotes": 11,
+      "externalId": {
+        "kpHD": null
+      }
+    },
+    {
+      "internalNames": [
+        "Carnival"
+      ],
+      "name": "",
+      "alternativeName": "Carnival",
+      "enName": "",
+      "year": 1935,
+      "genres": [
+        {
+          "name": "мелодрама"
+        },
+        {
+          "name": "комедия"
+        }
+      ],
+      "countries": [
+        {
+          "name": "США"
+        }
+      ],
+      "releaseYears": [],
+      "id": 27110,
+      "names": [
+        {
+          "name": "Carnival",
+          "language": null,
+          "type": "Original title on kinopoisk"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": null,
+      "poster": {
+        "url": null,
+        "previewUrl": null
+      },
+      "backdrop": {
+        "url": null,
+        "previewUrl": null
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 6.3,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 7,
+        "imdb": 53,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 77,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 6.3,
+      "internalVotes": 7,
+      "externalId": {
+        "kpHD": null
+      }
+    },
+    {
+      "internalNames": [
+        "Carnival"
+      ],
+      "name": "",
+      "alternativeName": "Carnival",
+      "enName": "",
+      "year": 2020,
+      "genres": [
+        {
+          "name": "короткометражка"
+        }
+      ],
+      "countries": [
+        {
+          "name": "Новая Зеландия"
+        }
+      ],
+      "releaseYears": [],
+      "id": 1345339,
+      "names": [
+        {
+          "name": "Carnival"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": {
+        "url": null
+      },
+      "poster": {
+        "url": null,
+        "previewUrl": null
+      },
+      "backdrop": {
+        "url": null,
+        "previewUrl": null
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 2,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 1,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 0,
+      "internalVotes": 2,
+      "externalId": {
+        "kpHD": null
+      }
+    },
+    {
+      "internalNames": [
+        "Carnival"
+      ],
+      "name": "",
+      "alternativeName": "Carnival",
+      "enName": "",
+      "year": 1931,
+      "genres": [
+        {
+          "name": "драма"
+        }
+      ],
+      "countries": [
+        {
+          "name": "Великобритания"
+        }
+      ],
+      "releaseYears": [],
+      "id": 170180,
+      "names": [
+        {
+          "name": "Carnival",
+          "language": null,
+          "type": "Original title on kinopoisk"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": null,
+      "poster": {
+        "url": null,
+        "previewUrl": null
+      },
+      "backdrop": {
+        "url": null,
+        "previewUrl": null
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 4.8,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 2,
+        "imdb": 8,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 88,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 4.8,
+      "internalVotes": 2,
+      "externalId": {
+        "kpHD": null
+      }
+    },
+    {
+      "internalNames": [
+        "Carnival"
+      ],
+      "name": "",
+      "alternativeName": "Carnival",
+      "enName": "",
+      "year": 2020,
+      "genres": [
+        {
+          "name": "короткометражка"
+        },
+        {
+          "name": "фэнтези"
+        },
+        {
+          "name": "драма"
+        }
+      ],
+      "countries": [
+        {
+          "name": "США"
+        }
+      ],
+      "releaseYears": [],
+      "id": 1325784,
+      "names": [
+        {
+          "name": "Carnival"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": {
+        "url": null
+      },
+      "poster": {
+        "url": null,
+        "previewUrl": null
+      },
+      "backdrop": {
+        "url": null,
+        "previewUrl": null
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 0,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 0,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 0,
+      "internalVotes": 0,
+      "externalId": {
+        "kpHD": null
+      }
+    },
+    {
+      "internalNames": [
+        "Carnival"
+      ],
+      "name": "",
+      "alternativeName": "Carnival",
+      "enName": "",
+      "year": 2019,
+      "genres": [
+        {
+          "name": "короткометражка"
+        },
+        {
+          "name": "драма"
+        }
+      ],
+      "countries": [
+        {
+          "name": "Великобритания"
+        }
+      ],
+      "releaseYears": [],
+      "id": 1238093,
+      "names": [
+        {
+          "name": "Carnival"
+        }
+      ],
+      "type": "movie",
+      "description": "",
+      "shortDescription": "",
+      "logo": {
+        "url": null
+      },
+      "poster": {
+        "url": null,
+        "previewUrl": null
+      },
+      "backdrop": {
+        "url": null,
+        "previewUrl": null
+      },
+      "rating": {
+        "kp": 0,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "votes": {
+        "kp": 0,
+        "imdb": 0,
+        "filmCritics": 0,
+        "russianFilmCritics": 0,
+        "await": 0
+      },
+      "movieLength": 0,
+      "isSeries": false,
+      "ticketsOnSale": false,
+      "totalSeriesLength": null,
+      "seriesLength": null,
+      "ratingMpaa": null,
+      "ageRating": null,
+      "top10": null,
+      "top250": null,
+      "typeNumber": 1,
+      "status": null,
+      "internalRating": 0,
+      "internalVotes": 0,
+      "externalId": {}
+    }
+  ],
+  "total": 282,
+  "limit": 10,
+  "page": 1,
+  "pages": 29
+}

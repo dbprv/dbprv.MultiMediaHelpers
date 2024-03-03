@@ -8,6 +8,28 @@ $script:config = $null
 #$env:MMH_CONFIG_PATH
 
 ### Functions:
+
+function Parse-Bool {
+  [OutputType([bool])]
+  param (
+    [Parameter(Mandatory = $true,
+               Position = 1)]
+    [AllowNull()]
+    [AllowEmptyString()]
+    $Value = $false
+  )
+  
+  if ($Value -ne $null) {
+    $Value = $Value.ToString().ToLower()
+    if (@("false", "no", "0") -contains $Value) { return $false }
+    if (@("true", "yes") -contains $Value) { return $true }
+    return [bool]$Value
+  } else {
+    return $false
+  }
+}
+
+
 function Get-ValidFileName {
   param (
     [Parameter(Mandatory = $true)]
@@ -35,7 +57,8 @@ function Expand-String {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]
-    [string]$String
+    [string]$String,
+    $Config
   )
   Write-Verbose "Expand-String: String: '$String'"
   
@@ -52,11 +75,19 @@ function Expand-String {
   foreach ($m in $matches) {
     [string]$var = $m.Groups[1].Value
     if ($var.StartsWith('env:')) {
-      $env_var = $var.Substring('env:'.Length)
+      $env_var = $var.Substring('env:'.Length).Trim()
       $value = [System.Environment]::GetEnvironmentVariable($env_var)
       if ($value) {
         $result.Replace($m.Groups[0].Value, $value) >$null
       }
+      
+    } elseif ($Config -and $var.StartsWith('config:')) {
+      $config_var = $var.Substring('config:'.Length).Trim()
+      $value = $Config.$config_var
+      if ($value) {
+        $result.Replace($m.Groups[0].Value, $value) >$null
+      }
+      
     } else {
       Write-Warning "Cannot expand var '$var': unknown syntax"
     }
@@ -83,16 +114,17 @@ function Expand-ConfigValues {
   param (
     [Parameter(Mandatory = $true,
                ValueFromPipeline = $true)]
-    [hashtable]$Node
+    [hashtable]$Node,
+    [hashtable]$Root
   )
   process {
     $keys = @($Node.Keys | % { $_ })
     $keys | % {
       $value = $node[$_]
       if (($value -is [string]) -and ("$value".Contains('{'))) {
-        $node[$_] = Expand-String $value
+        $node[$_] = Expand-String -String $value -Config $Root
       } elseif ($value -is [hashtable]) {
-        $node[$_] = Expand-ConfigValues -Node $value
+        $node[$_] = Expand-ConfigValues -Node $value -Root $Root
       }
     }
     $node
@@ -112,12 +144,15 @@ function Get-Config {
     if (!(Get-Module 'powershell-yaml' -ListAvailable)) {
       Install-Module 'powershell-yaml' -Force -ErrorAction 'Stop' -SkipPublisherCheck
     }
-#    Import-Module 'powershell-yaml' -ErrorAction 'Stop' -DisableNameChecking    
+    #    Import-Module 'powershell-yaml' -ErrorAction 'Stop' -DisableNameChecking    
     
     Write-Verbose "Get-Config: read config '$Path'"
     $Path = (Resolve-Path $Path).Path
     Import-Module powershell-yaml -ea Stop
-    $script:config = ConvertFrom-Yaml -Yaml (gc $Path -raw) -ea Stop | Expand-ConfigValues
+    
+    $raw_config = ConvertFrom-Yaml -Yaml (gc $Path -raw) -ea Stop
+    $script:config = Expand-ConfigValues -Node $raw_config -Root $raw_config
+    #    $script:config = ConvertFrom-Yaml -Yaml (gc $Path -raw) -ea Stop | Expand-ConfigValues    
     
   } else {
     Write-Verbose "Get-Config: config already read: '$Path'"

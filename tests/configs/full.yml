@@ -1,34 +1,60 @@
+WorkingDirectory: D:\mmh
+
+Logging:
+  Directory: '{config:WorkingDirectory}\logs'
+
 Cache:
   Enabled: true
-  Dir: D:\pester\cache
+  Directory: '{config:WorkingDirectory}\cache'
   #Expires: 0 ### seconds ### NOT IMPLEMENTED
 
 FileNameTokens:
   DynamicRanges:
     - SDR
     - HDR
+    - HDR10
   Codecs:
+    - H.264
     - H.265
+    - x265
     - HEVC
   Sources:
     - WEB-DL
+    - WEBRip
     - BDRip
     - UHDRemux
     - BluRay
-  ExcludeSplit:
-    - H.265
-    - DD.5.1
   Resolutions:
     - 720p
     - 1080p
     - 2160p
+  Sound:
+    - DD.5.1
+    - DDP5.1
+    - TrueHD
+    - Atmos
+    - "7.1"
+  DoNotSplit:
+    - H.264
+    - H.265
+    - DD.5.1
+    - DDP5.1
+    - "7.1"
 
 Kinopoisk:
   ApiUrl: https://api.kinopoisk.dev/v1.4
   ApiKey: "{env:KINOPOISK_API_KEY}"
+
+Tmdb:
+  ApiUrl: https://api.themoviedb.org/3
+  AccessToken: "{env:TMDB_ACCESS_TOKEN}"
 
 VideoFilesExtensions:
   - mkv
   - mp4
   - ts
   - avi
+  - m2ts
+
+ExcludeFolders:
+  - .actors
