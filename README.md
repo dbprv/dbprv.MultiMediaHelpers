@@ -14,17 +14,11 @@ Powershell module with various functions for working with multimedia files.
 - parse complex file/directory name to title, year, etc.
 - search by reverse transliterated titles from english to russian
 
-## Powershell Functions
+## Configure
 
-### Create-KodiMoviesNfo
-
-Create .nfo files for Kodi media player for movies and TV series.
-
-Information about movies is obtained from https://www.kinopoisk.ru via API https://api.kinopoisk.dev
-
-Configure:
 - create config, see [example](examples/configs/multimedia_helpers.yml)
 - set environmet variable `MMH_CONFIG_PATH` = config path
+
 - get API key for kinopoisk.dev from  https://api.kinopoisk.dev/documentation
 - set environmet variable `KINOPOISK_API_KEY` = this API key \
   OR directly in config:
@@ -33,10 +27,28 @@ Configure:
     ApiKey: ...
   ```
 
+- get TMDB Access Token https://www.themoviedb.org/settings/api
+- set environmet variable `TMDB_ACCESS_TOKEN` = this access token \
+  OR directly in config:
+  ```yaml
+  Tmdb:
+    AccessToken: "{env:TMDB_ACCESS_TOKEN}"
+  ```
+
+
+## Powershell Functions
+
+### Create-KodiMoviesNfo
+
+Create .nfo files for Kodi media player for movies and TV series.
+
+Information about movies is obtained from https://www.kinopoisk.ru via API https://api.kinopoisk.dev
+
 Usage:
 ```pwsh
 Create-KodiMoviesNfo -Folder <films_dir>
 ```
+
 
 ### Check-KodiNfo
 
