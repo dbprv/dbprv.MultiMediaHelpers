@@ -11,7 +11,7 @@ BeforeAll {
   $ErrorActionPreference = 'Stop'
   $VerbosePreference = 'Continue'
   
-  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "full.yml"
+  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "multimedia_helpers.yml"
 }
 
 
@@ -106,8 +106,8 @@ Describe 'Create-KodiMoviesNfo' {
      @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
     
     ### Сериалы:
-    @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
-     @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
+    # @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
+    #  @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
     # @{ folder = 'H:\video_test\tvshows'; type = 'TVShow'; countries_any = @(); limit = 333 }
     
   ) {

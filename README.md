@@ -9,8 +9,9 @@ Powershell module with various functions for working with multimedia files.
 
 ## Features
 
-- create .nfo files for Kodi for movies, tv shows
+- create .nfo files for Kodi for movies, TV shows
 - search information on Kinopoisk, TMDB
+- search trailers on TMDB, Youtube
 - parse complex file/directory name to title, year, etc.
 - search by reverse transliterated titles from english to russian
 
@@ -34,6 +35,8 @@ Powershell module with various functions for working with multimedia files.
   Tmdb:
     AccessToken: "{env:TMDB_ACCESS_TOKEN}"
   ```
+
+To search trailers on Youtube:
 
 
 ## Powershell Functions
