@@ -97,13 +97,10 @@ $(($result.Tokens | ft * -AutoSize | Out-String).Trim())
 Describe 'Create-KodiMoviesNfo' {
   It 'folder: [<folder>], countries_any: [<countries_any>], limit: [<limit>]' -ForEach @(
     ### Фильмы:
-    @{ folder = 'H:\Video\Фильмы'; type = 'Movie'; countries_any = @(); limit = 333 }
-    #  @{ folder = 'H:\video_test\movies'; type = 'Movie'; countries_any = @(); limit = 3 }
-    
-     @{ folder = 'H:\Video\Россия'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 333 }
-    #  @{ folder = 'H:\Video\Россия\test'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 3 }
-    
-     @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
+    # @{ folder = 'H:\Video\Фильмы'; type = 'Movie'; countries_any = @(); limit = 333 }
+    #  @{ folder = 'H:\Video\Россия'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 333 }
+    #  @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
+     @{ folder = 'H:\video_test\movies'; type = 'Movie'; countries_any = @(); limit = 3 }
     
     ### Сериалы:
     # @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
@@ -149,12 +146,12 @@ Describe 'Check-KodiNfo' {
   }
   
   It 'folder: [<folder>], limit: [<limit>]' -ForEach @(
-    @{ folder = 'H:\Video\Фильмы'; limit = 333 }
-    @{ folder = 'H:\Video\Россия'; limit = 333 }
-    @{ folder = 'H:\Video\Детское'; limit = 333 }
+    # @{ folder = 'H:\Video\Фильмы'; limit = 333 }
+    # @{ folder = 'H:\Video\Россия'; limit = 333 }
+    # @{ folder = 'H:\Video\Детское'; limit = 333 }
 
-    # @{ folder = 'H:\Video\Сериалы'; limit = 333 }
-    # @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
+    @{ folder = 'H:\Video\Сериалы'; limit = 333 }
+    @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
     
   ) {
     $result = Check-KodiNfo -Folder $folder -Limit $limit

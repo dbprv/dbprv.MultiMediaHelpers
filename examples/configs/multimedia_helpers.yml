@@ -52,6 +52,7 @@ Tmdb:
 Youtube:
   ApiUrl: https://youtube.googleapis.com/youtube/v3
   ApiKey: "{env:YOUTUBE_API_KEY}"
+  Region: RU
 
 VideoFilesExtensions:
   - mkv

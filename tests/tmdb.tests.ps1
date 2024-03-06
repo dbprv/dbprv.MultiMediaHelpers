@@ -16,7 +16,7 @@ BeforeAll {
 Describe 'Find-TmdbByExternalId' {
   It 'imdb_id: [<name>], year: [<year>], expected_name: [<expected_name>]' -ForEach @(
     @{ imdb_id = 'tt22478010'; external_source = 'imdb'; expected_name = 'Чук и Гек. Большое приключение'; tmdb_id = '800852' }
-   @{ imdb_id = 'tt20242042'; external_source = 'imdb'; expected_name = 'Задача трёх тел'; tmdb_id = '204541' }
+    @{ imdb_id = 'tt20242042'; external_source = 'imdb'; expected_name = 'Задача трёх тел'; tmdb_id = '204541' }
   ) {
     $results = @(Find-TmdbByExternalId -ExternalId $imdb_id -ExternalSource $external_source)
     Write-Verbose "results count: [$($results.Length)]"
@@ -34,7 +34,7 @@ Describe 'Find-Tmdb' {
     # @{ name = 'Сексмиссия'; year = 1984; content_type = 'movie'; expected_name = 'Сексмиссия' }
     # Венера     Venus
     # @{ name = 'Венера'; year = 2022; content_type = 'movie'; expected_name = 'Венера' }
-
+    
     @{ name = 'ГДР'; year = 2024; content_type = 'tvshow'; expected_name = 'ГДР' }
   ) {
     $results = @(Find-Tmdb -Name $name -Year $year -ContentType $content_type -ErrorAction Continue)
@@ -52,13 +52,20 @@ Describe 'Find-TmdbSingle' {
     # @{ name = 'Сексмиссия'; original_name = ''; year = 1983; content_type = 'movie'; expected_name = 'Сексмиссия' }
     # Венера     Venus
     # @{ name = 'Венера'; original_name = ''; year = 2022; content_type = 'movie'; expected_name = 'Венера' }
-
+    
     ### TVShows
     # @{ name = 'ГДР'; year = 2024; content_type = 'tvshow'; expected_name = 'ГДР' }
-    @{ name = 'Бивис и Баттхед'; year = 2023; content_type = 'tvshow'; expected_name = 'Бивис и Баттхед Майка Джаджа' }
-
+    # @{ name = 'Бивис и Баттхед'; year = 2023; content_type = 'tvshow'; expected_name = 'Бивис и Баттхед Майка Джаджа' }
+    @{ name = 'Иные'; year = 2023; original_language = 'ru'; content_type = 'tvshow'; expected_name = 'Иные' }
+    
   ) {
-    $result = Find-TmdbSingle -Name $name -OriginalName $original_name -Year $year -ContentType $content_type -ErrorAction Continue
+    $result = Find-TmdbSingle -Name $name `
+                              -OriginalName $original_name `
+                              -OriginalLanguage $original_language `
+                              -Year $year `
+                              -ContentType $content_type `
+                              -ErrorAction Continue
+    
     # Write-Verbose "results count: [$($result.Length)]"
     # Write-Verbose "results:`r`n===`r`n$($results | ConvertTo-Yaml)`r`n==="
     Write-Verbose "result:`r`n===`r`n$($result | ConvertTo-Json -Depth 5)`r`n==="
@@ -84,9 +91,11 @@ Describe 'Get-TmdbVideos' {
 
 Describe 'Get-TmdbTrailers' {
   It 'id: [<id>], content_type: [<content_type>], expected_key: [<expected_key>]' -ForEach @(
-    @{ id = 603692; content_type = 'movie'; expected_key = '3Ol0ptL_ppk' } # John Wick 4
+    # @{ id = 603692; content_type = 'movie'; expected_key = '3Ol0ptL_ppk' } # John Wick 4
     # @{ id = 986088; content_type = 'movie'; expected_key = 'M6zQZ0_Re8o' } # Control
+    @{ id = 19673; content_type = 'movie'; expected_key = '2rHia6FcBjE' } # Seksmissia
     
+
     #    @{ id = 90027; content_type = 'tvshow'; expected_key = '369LHB9N-Ro' }
     #    @{ id = 245303; content_type = 'tvshow'; expected_key = 'vi6WXkYxC6s' }
   ) {

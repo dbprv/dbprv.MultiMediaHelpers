@@ -32,7 +32,7 @@ function Invoke-YoutubeRequest {
     [System.Collections.Specialized.OrderedDictionary]$Query = @{ } ### ordered - обязательно, чтобы был одинаковый порядок параметров
   )
   Write-Verbose "Invoke-YoutubeRequest: begin"
-  Write-Verbose "Invoke-YoutubeRequest: ErrorActionPreference: '$ErrorActionPreference'"
+#  Write-Verbose "Invoke-YoutubeRequest: ErrorActionPreference: '$ErrorActionPreference'"
   Write-Verbose "Invoke-YoutubeRequest: Url: '$Url'"
   
   $config = (Get-Config).Youtube
@@ -74,13 +74,13 @@ function Find-YoutubeVideos {
   
   process {
     Write-Verbose "Find-YoutubeVideos: String: '$String', Language: '$Language'"
-    Write-Verbose "Find-YoutubeVideos: ErrorActionPreference: '$ErrorActionPreference'"
+#    Write-Verbose "Find-YoutubeVideos: ErrorActionPreference: '$ErrorActionPreference'"
     
     $url = "search"
     $query = [ordered]@{
       part       = 'snippet'
       maxResults = 25
-      q          = [URI]::EscapeUriString($String)
+      q          = $String
       type       = 'video'
       relevanceLanguage = $Language
     }
@@ -105,7 +105,7 @@ function Find-YoutubeTrailer {
   )
   
   Write-Verbose "Find-YoutubeVideos: String: '$Name', Language: '$Language'"
-  Write-Verbose "Find-YoutubeVideos: ErrorActionPreference: '$ErrorActionPreference'"
+#  Write-Verbose "Find-YoutubeVideos: ErrorActionPreference: '$ErrorActionPreference'"
   
   $string = if ($Language -eq 'ru-RU') {
     "$Name $($content_type_to_query_rus[$ContentType]) трейлер"
@@ -126,5 +126,38 @@ function Find-YoutubeTrailer {
     
   } else {
     Write-Warning "Find-YoutubeTrailer: trailer not found: '$string'"
+  }
+}
+
+### Получить видео по ID
+#https://developers.google.com/youtube/v3/docs/videos/list
+#https://youtube.googleapis.com/youtube/v3/videos?part=snippet%%2CcontentDetails%%2Cstatistics&id=wZT41q6tRSk&key=%YOUR_API_KEY%
+<#
+part=snippet%%2CcontentDetails%%2Cstatistics
+&id=wZT41q6tRSk
+#>
+function Get-YoutubeVideo {
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true,
+               ValueFromPipeline = $true)]
+    [string]$Id
+  )
+  
+  process {
+    Write-Verbose "Get-YoutubeVideo: Id: '$Id'"
+#    Write-Verbose "Get-YoutubeVideo: ErrorActionPreference: '$ErrorActionPreference'"
+    
+    $url = "videos"
+    $query = [ordered]@{
+      part = 'snippet,contentDetails,statistics'
+      id   = $Id
+    }
+    
+    Invoke-YoutubeRequest -Url $url -ResponseType JSON -Query $query | select -ExpandProperty items | % {
+      Add-Member -InputObject $_ -MemberType NoteProperty -Name Url -Value "https://www.youtube.com/watch?v=$($_.id)"
+      Add-Member -InputObject $_ -MemberType NoteProperty -Name KodiUrl -Value "plugin://plugin.video.youtube/?action=play_video&videoid=$($_.id)"
+      $_
+    }
   }
 }

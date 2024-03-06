@@ -39,3 +39,14 @@ Describe 'Find-YoutubeTrailer' {
     $result.id.videoId | Should -Be $expected_id
   }
 }
+
+Describe 'Get-YoutubeVideo' {
+  It 'id: [<id>], expected_title: [<expected_title>]' -ForEach @(
+    @{ id = 'WflBCCVdDkw'; expected_title = 'venus' }
+    @{ id = 'wZT41q6tRSk'; expected_title = $null }
+  ) {
+    $result = Get-YoutubeVideo -Id $id
+    Write-Verbose "result:`r`n$(($result | ConvertTo-Json | Out-String).Trim())"
+    $result.snippet.title | Should -Match $expected_title
+  }
+}

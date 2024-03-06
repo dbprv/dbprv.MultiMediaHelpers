@@ -28,7 +28,7 @@ function Invoke-TmdbRequest {
     [System.Collections.Specialized.OrderedDictionary]$Query = @{ } ### ordered - обязательно, чтобы был одинаковый порядок параметров
   )
   Write-Verbose "Invoke-TmdbRequest: begin"
-  Write-Verbose "Invoke-TmdbRequest: ErrorActionPreference: '$ErrorActionPreference'"
+  #Write-Verbose "Invoke-TmdbRequest: ErrorActionPreference: '$ErrorActionPreference'"
   Write-Verbose "Invoke-TmdbRequest: Url: '$Url'"
   
   $config = Get-Config
@@ -114,9 +114,9 @@ function Find-TmdbByExternalId {
   
   process {
     Write-Verbose "Find-Tmdb: ExternalId: '$ExternalId', ExternalSource: '$ExternalSource'"
-    Write-Verbose "Find-Tmdb: ErrorActionPreference: '$ErrorActionPreference'"
+    #Write-Verbose "Find-Tmdb: ErrorActionPreference: '$ErrorActionPreference'"
     
-    $url = "find/" + ([URI]::EscapeUriString($ExternalId))
+    $url = "find/$ExternalId"
     $query = [ordered]@{
       external_source = $ExternalSource + "_id"
     }
@@ -150,7 +150,7 @@ function Find-Tmdb {
   
   process {
     Write-Verbose "Find-Tmdb: Name: '$Name'"
-    Write-Verbose "Find-Tmdb: ErrorActionPreference: '$ErrorActionPreference'"
+    #Write-Verbose "Find-Tmdb: ErrorActionPreference: '$ErrorActionPreference'"
     
     $url = if ($ContentType -eq 'Movie') {
       'search/movie'
@@ -161,7 +161,7 @@ function Find-Tmdb {
     $query = [ordered]@{
       page          = 1
       include_adult = 'true'
-      query         = [URI]::EscapeUriString($Name)
+      query         = $Name
     }
     if ($Year) { $query.year = $Year }
     if ($Language) { $query.language = $Language }
@@ -212,12 +212,13 @@ function Find-TmdbSingle {
     [ValidateSet('Movie', 'TVShow')]
     [string]$ContentType,
     [string]$OriginalName,
+    [string]$OriginalLanguage,
     [int]$Year,
     [string]$ImdbId
   )
   
   Write-Verbose "Find-TmdbSingle: Name: '$Name', OriginalName: '$OriginalName', Year: '$Year'"
-  Write-Verbose "Find-TmdbSingle: ErrorActionPreference: '$ErrorActionPreference'"
+  #Write-Verbose "Find-TmdbSingle: ErrorActionPreference: '$ErrorActionPreference'"
   
   $result = [FindTmdbResult]@{
     Name    = $Name
@@ -298,17 +299,22 @@ function Find-TmdbSingle {
       Write-Host "Find by year $y" -fo Cyan
       $delta = $y - $Year
       $delta_msg = if ($delta) { " ($('{0:+#;-#;0}' -f $delta))" } else { '' }
-      $find_results_year = @($find_results | ? { $_.year -eq $y })
+      $find_results_year = @(
+        $find_results | ? { $_.year -eq $y } `
+        | ? { if ($OriginalLanguage) { $_.original_language -eq $OriginalLanguage } else { $true } }
+      )
       if ($find_results_year) {
         if ($find_results_year.Length -eq 1) {
           $result.Result = $find_results_year[0]
           $result.Success = $true
           $result.Message = "Found single by year $($y)$delta_msg"
+          if($OriginalLanguage) { $result.Message += " and original language '$OriginalLanguage'" }
           return $result
         } else {
           $result.Result = $find_results_year[0]
           $result.Success = $true
           $result.Message = "Found multiple by year $($y)$delta_msg, select 1st"
+          if ($OriginalLanguage) { $result.Message += " and original language '$OriginalLanguage'" }
           return $result
         }
       }
@@ -377,6 +383,7 @@ function Get-TmdbVideos {
     } | % {
       Add-Member -InputObject $_ -MemberType NoteProperty -Name Order -Value $type_order[$_.type]
       if ($_.site -eq "YouTube") {
+        Add-Member -InputObject $_ -MemberType NoteProperty -Name YoutubeId -Value $_.key
         Add-Member -InputObject $_ -MemberType NoteProperty -Name Url -Value "https://www.youtube.com/watch?v=$($_.key)" ### Не работает в Kodi
         Add-Member -InputObject $_ -MemberType NoteProperty -Name KodiUrl -Value "plugin://plugin.video.youtube/?action=play_video&videoid=$($_.key)"
       }
