@@ -2,12 +2,10 @@
 setlocal
 set MMH_CONFIG_PATH=%~dp0multimedia_helpers.yml
 
-call :CheckInfo "Фильмы"
-call :CheckInfo "Россия"
-call :CheckInfo "Детское"
-
-call :CheckInfo "Сериалы"
-call :CheckInfo "Сериалы2"
+call :CheckInfo "Movies1"
+call :CheckInfo "Movies2"
+call :CheckInfo "TVShows1"
+call :CheckInfo "TVShows2"
 
 pause
 

@@ -51,9 +51,12 @@ Describe 'Find-KinopoiskMovieSingle' {
     
   #  @{ name = 'Foundation'; year = 2021; countries = @(); type = 'tvshow'; expected_name = 'Основание' }
     #  @{ name = 'Иные'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
-   @{ name = 'Inye'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
+  #  @{ name = 'Inye'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
 #    @{ name = 'Beavis and Butt-Head'; year = 2022; countries = @(); type = 'tvshow'; expected_name = 'Бивис и Батт-Хед' }
-    
+
+    ###
+    @{ name = 'Bruys vsemoguwij'; year = 2003; countries = @(); type = 'movie'; expected_name = 'Брюс Всемогущий' }
+
   ) {
     $result = Find-KinopoiskMovieSingle -Name $name `
                                         -Year $year `

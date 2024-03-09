@@ -25,7 +25,7 @@ Powershell module with various functions for working with multimedia files.
   OR directly in config:
   ```yaml
   Kinopoisk:
-    ApiKey: ...
+    ApiKey: '...'
   ```
 
 - get TMDB Access Token https://www.themoviedb.org/settings/api
@@ -33,11 +33,27 @@ Powershell module with various functions for working with multimedia files.
   OR directly in config:
   ```yaml
   Tmdb:
-    AccessToken: "{env:TMDB_ACCESS_TOKEN}"
+    AccessToken: '...'
   ```
 
-To search trailers on Youtube:
-
+Some trailers from TMDB info may be already deleted or not available for your country.
+To search and validate trailers on Youtube:
+- go to https://console.developers.google.com
+- create project
+- select "ENABLE APIS AND SERVICES"
+- select "YouTube Data API v3", Enable
+- press "CREATE CREDENTIALS", select "Public data"
+- save API key somewhere
+- optionally - restrict API key: select "Credentials" - select your new API key - API restrictions - Restrict key - YouTube Data API v3 - Save
+- set environmet variable `YOUTUBE_API_KEY` = this API key \
+  OR directly in config:
+```yaml
+Youtube:
+  ...
+  ApiKey: '...'
+  Region: RU
+```
+- set "Region" (2 letters, as country domain) - it is used to validate if video is available for your country
 
 ## Powershell Functions
 
