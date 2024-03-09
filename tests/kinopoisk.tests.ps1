@@ -10,7 +10,7 @@ BeforeAll {
   $ErrorActionPreference = 'Stop'
   $VerbosePreference = 'Continue'
   
-  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "full.yml"
+  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "multimedia_helpers.yml"
 }
 
 

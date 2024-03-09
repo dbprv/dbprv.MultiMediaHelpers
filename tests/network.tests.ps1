@@ -11,19 +11,18 @@ BeforeAll {
   $ErrorActionPreference = 'Stop'
   $VerbosePreference = 'Continue'
   
-  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "full.yml"
+  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "multimedia_helpers.yml"
 }
 
 Describe 'Get-UrlContent' {
   It 'url: [<url>], response_type: [<response_type>], result_regex: [<result_regex>]' -ForEach @(
 #    @{ url = 'https://api.nuget.org/v3/index.json'; query = @{ }; response_type = 'text'; result_regex = "resources" }
 #    @{ url = 'https://github.com/octocat'; query = @{ tab = 'repositories' }; response_type = 'text'; result_regex = "Find a repository" }
-#        @{ url = 'https://github.com/octocat/Spoon-Knife/issues'; query = [ordered]@{ aaa = 111; bbb = 222; ccc = 333 }; response_type = 'text'; result_regex = "Spoon-Knife" }
-#    @{ url = 'https://github.com/octocat/Spoon-Knife/issues'; query = @{ aaa = 111; bbb = 222; ccc = 333 }; response_type = 'text'; result_regex = "Spoon-Knife" }
+   @{ url = 'https://github.com/octocat/Spoon-Knife/issues'; query = [ordered]@{ aaa = 111; bbb = 'eee fff;ggg'; ddd=''; ccc = 333; hhh='iii%20jjj' }; response_type = 'text'; result_regex = "Spoon-Knife" }
     
     ### Test error:
-#    @{ url = 'https://github.com/octocat/Spoon-Knife1'; query = [ordered]@{ aaa = 111; bbb = 222; ccc = 333 }; response_type = 'text'; result_regex = "Spoon-Knife" }
-    @{ url = 'https://api.themoviedb.org/3/movie/550'; query = [ordered]@{ aaa = 111; bbb = 222; ccc = 333 }; response_type = 'text'; result_regex = "Spoon-Knife" }
+  #  @{ url = 'https://github.com/octocat/Spoon-Knife1'; query = [ordered]@{ aaa = 111; bbb = 222; ccc = 333 }; response_type = 'text'; result_regex = "Spoon-Knife" }
+    # @{ url = 'https://api.themoviedb.org/3/movie/550'; query = [ordered]@{ aaa = 111; bbb = 222; ccc = 333 }; response_type = 'text'; result_regex = "Spoon-Knife" }
     
     
   ) {

@@ -1,11 +1,11 @@
-#using namespace System.Collections.Generic
+﻿#using namespace System.Collections.Generic
 
 ### Includes:
 . "$PSScriptRoot\cache.ps1"
 
 ### Variables:
 $network_stat = [pscustomobject]@{
-  ReadFromCacheCount = 0
+  ReadFromCacheCount    = 0
   InvokeWebRequestCount = 0
 }
 
@@ -38,6 +38,8 @@ function Get-UrlContent {
     #    [switch]$Cache
   )
   
+  ### !!! Экранировать ничего не надо - все автоматом
+  
   Write-Verbose "Get-UrlContent: begin"
   Write-Verbose "Get-UrlContent: ErrorActionPreference: '$ErrorActionPreference'"
   Write-Verbose "Get-UrlContent: Url: '$Url'"
@@ -57,13 +59,26 @@ function Get-UrlContent {
   }
   
   $query_str = if ($Query -and $Query.Count) {
-    '?' + (@($Query.GetEnumerator() | ? { $_.Value } | % { "$($_.Key)=$($_.Value)" }) -join '&')
+    '?' + (
+      @(
+        $Query.GetEnumerator() | % {
+          if ($_.Value) {
+            #            "$($_.Key)=$([URI]::EscapeDataString($_.Value))"
+            #            "$($_.Key)=$([URI]::EscapeUriString($_.Value))"
+            "$($_.Key)=$($_.Value)"
+          } else {
+            "$($_.Key)"
+          }
+        }
+      ) -join '&'
+    )
   } else {
     ''
   }
   Write-Verbose "Get-UrlContent: query_str: '$query_str'"
   
   $full_url = $Url + $query_str
+  #  $full_url = [URI]::EscapeUriString($Url + $query_str)
   Write-Verbose "Get-UrlContent: full URL: '$full_url'"
   
   $cache_key = $full_url
@@ -78,14 +93,14 @@ function Get-UrlContent {
         $props = @(Get-Member -InputObject $result -MemberType Properties | select -ExpandProperty Name)
         #        if ($result.count -and $result.value) {
         if (('count' -in $props) -and ('value' -in $props)) {
-          Write-Verbose "result(1): [$result]"
+          #          Write-Verbose "result(1): [$result]"
           return $result.value
         }
-        Write-Verbose "result(2): [$result]"
+        #        Write-Verbose "result(2): [$result]"
         return $result
         
       } elseif ($ResponseType -eq 'Text') {
-        Write-Verbose "result(3): [$cache_result]"
+        #        Write-Verbose "result(3): [$cache_result]"
         return $cache_result
         
       } else {
@@ -98,44 +113,44 @@ function Get-UrlContent {
   
   $params = @{ }
   
-#  Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState -ErrorAction 'SilentlyContinue'
+  #  Get-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState -ErrorAction 'SilentlyContinue'
   #  Write-Host "`r`n*** Function Name:" -ForegroundColor 'White'
-#  try {
+  #  try {
   #  Write-Host ("Parameters:`r`n" + (New-Object "PSObject" -Property $PSBoundParameters | fl * | Out-String).Trim()) -ForegroundColor 'Cyan'
-    
-    Write-Verbose "Get-UrlContent: invoke web request to get result"
-    
-    ### ���������� -ErrorAction, ������� � try-catch:
-    $response = Invoke-WebRequest -Uri $full_url -Headers $Headers @params
-    $network_stat.InvokeWebRequestCount++
-    if ($cache_enabled) {
-      Save-TextToCache -Key $cache_key -Text $response.Content -FileExtension $ext
+  
+  Write-Verbose "Get-UrlContent: invoke web request to get result"
+  
+  ### Игнорирует -ErrorAction, поэтому в try-catch:
+  $response = Invoke-WebRequest -Uri $full_url -Headers $Headers @params
+  $network_stat.InvokeWebRequestCount++
+  if ($cache_enabled) {
+    Save-TextToCache -Key $cache_key -Text $response.Content -FileExtension $ext
+  }
+  
+  if ($ResponseType -eq 'JSON') {
+    $result = ConvertFrom-Json -InputObject $response.Content
+    $props = @(Get-Member -InputObject $result -MemberType Properties | select -ExpandProperty Name)
+    #        if ($result.count -and $result.value) {
+    if (('count' -in $props) -and ('value' -in $props)) {
+      return $result.value
     }
+    return $result
     
-    if ($ResponseType -eq 'JSON') {
-      $result = ConvertFrom-Json -InputObject $response.Content
-      $props = @(Get-Member -InputObject $result -MemberType Properties | select -ExpandProperty Name)
-      #        if ($result.count -and $result.value) {
-      if (('count' -in $props) -and ('value' -in $props)) {
-        return $result.value
-      }
-      return $result
-      
-    } elseif ($ResponseType -eq 'Text') {
-      return $response.Content
-      
-    } else {
-      throw "Invalid response type '$ResponseType'"
-    }
+  } elseif ($ResponseType -eq 'Text') {
+    return $response.Content
     
-#  } catch {
-#    if ($ErrorActionPreference -eq 'Stop') {
-#      throw
-#    } elseif ($ErrorActionPreference -ne 'SilentlyContinue') {
-#      Write-Host ($_ | fl * -Force | Out-String).Trim() -ForegroundColor 'Red'
-#      Write-Host ("Parameters:`r`n" + (New-Object "PSObject" -Property $PSBoundParameters | fl * | Out-String).Trim()) -ForegroundColor 'Cyan'
-#    }
-#  }
+  } else {
+    throw "Invalid response type '$ResponseType'"
+  }
+  
+  #  } catch {
+  #    if ($ErrorActionPreference -eq 'Stop') {
+  #      throw
+  #    } elseif ($ErrorActionPreference -ne 'SilentlyContinue') {
+  #      Write-Host ($_ | fl * -Force | Out-String).Trim() -ForegroundColor 'Red'
+  #      Write-Host ("Parameters:`r`n" + (New-Object "PSObject" -Property $PSBoundParameters | fl * | Out-String).Trim()) -ForegroundColor 'Cyan'
+  #    }
+  #  }
 }
 
 function Show-NetworkStat() {

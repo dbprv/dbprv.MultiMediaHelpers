@@ -9,8 +9,9 @@ Powershell module with various functions for working with multimedia files.
 
 ## Features
 
-- create .nfo files for Kodi for movies, tv shows
+- create .nfo files for Kodi for movies, TV shows
 - search information on Kinopoisk, TMDB
+- search trailers on TMDB, Youtube
 - parse complex file/directory name to title, year, etc.
 - search by reverse transliterated titles from english to russian
 
@@ -35,6 +36,8 @@ Powershell module with various functions for working with multimedia files.
     AccessToken: "{env:TMDB_ACCESS_TOKEN}"
   ```
 
+To search trailers on Youtube:
+
 
 ## Powershell Functions
 
@@ -42,24 +45,49 @@ Powershell module with various functions for working with multimedia files.
 
 Create .nfo files for Kodi media player for movies and TV series.
 
-Information about movies is obtained from https://www.kinopoisk.ru via API https://api.kinopoisk.dev
+Information about movies is obtained from:
+- [Kinopoisk](https://www.kinopoisk.ru) via API https://api.kinopoisk.dev
+- [TMDB](https://www.themoviedb.org)
 
 Usage:
+
+For movies:
 ```pwsh
-Create-KodiMoviesNfo -Folder <films_dir>
+Create-KodiMoviesNfo -Folder 'D:\Video\Movies' -ContentType 'Movie'
 ```
+
+For TV shows:
+```pwsh
+Create-KodiMoviesNfo -Folder 'D:\Video\TVShows' -ContentType 'TVShow'
+```
+
+Required params:
+- `Folder` - folder with media files
+- `ContentType` -  Movie | TVShow
+
+Additional params:
+- `SaveInfo` - save internal info and logs to `<Folder>\.media_info` dir
 
 
 ### Check-KodiNfo
 
 Check nfo-files in media dir:
-- common list
+- show common list
 - TMDB ID not found
 - no trailer
 
 Usage:
 ```
-Check-KodiNfo -Folder <films_dir>
+Check-KodiNfo -Folder 'D:\Video\Movies'
+```
+
+### Export-KodiNfoCsv
+
+Export info from Kodi nfo-files to CSV.
+
+Usage:
+```
+Export-KodiNfoCsv -Folders 'D:\Video\Movies', 'D:\Video\Movies2' -ResultPath 'D:\Video\Movies.csv'
 ```
 
 ## Troubleshooting

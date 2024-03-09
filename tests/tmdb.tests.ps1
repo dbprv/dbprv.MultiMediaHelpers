@@ -10,67 +10,68 @@ BeforeAll {
   $ErrorActionPreference = 'Stop'
   $VerbosePreference = 'Continue'
   
-  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "full.yml"
+  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "multimedia_helpers.yml"
 }
 
-Describe 'Find-TmdbMovies' {
-  It 'name: [<name>], year: [<year>], expected_name: [<expected_name>]' -ForEach @(
-     @{ name = 'Костолом'; year = 2023; expected_name = 'Костолом' }
-# Сексмиссия Seksmisja
-    # @{ name = 'Сексмиссия'; year = 1984; expected_name = 'Сексмиссия' }
-# Венера     Venus
-    # @{ name = 'Венера'; year = 2022; expected_name = 'Венера' }
+Describe 'Find-TmdbByExternalId' {
+  It 'imdb_id: [<name>], year: [<year>], expected_name: [<expected_name>]' -ForEach @(
+    @{ imdb_id = 'tt22478010'; external_source = 'imdb'; expected_name = 'Чук и Гек. Большое приключение'; tmdb_id = '800852' }
+    @{ imdb_id = 'tt20242042'; external_source = 'imdb'; expected_name = 'Задача трёх тел'; tmdb_id = '204541' }
   ) {
-    $results = @(Find-TmdbMovies -Name $name -Year $year -ErrorAction Continue)
+    $results = @(Find-TmdbByExternalId -ExternalId $imdb_id -ExternalSource $external_source)
     Write-Verbose "results count: [$($results.Length)]"
     Write-Verbose "results:`r`n===`r`n$($results | ConvertTo-Yaml)`r`n==="
-    Write-Host "`r`n$($results | select id, title, original_title, original_language, release_date, year | ft -AutoSize | Out-String)"
+    Write-Host "`r`n$($results | select id, name, original_name, year, original_language | ft -AutoSize | Out-String)"
+    $results[0].id | Should -Be $tmdb_id
+    $results[0].name | Should -Be $expected_name
   }
 }
 
-Describe 'Find-TmdbMovieSingle' {
+Describe 'Find-Tmdb' {
   It 'name: [<name>], year: [<year>], expected_name: [<expected_name>]' -ForEach @(
-    #  @{ name = 'Костолом'; original_name = 'Ruthless'; year = 2023; expected_name = 'Костолом' }
-# Сексмиссия Seksmisja
-    # @{ name = 'Сексмиссия'; original_name = ''; year = 1983; expected_name = 'Сексмиссия' }
-# Венера     Venus
-    @{ name = 'Венера'; original_name = ''; year = 2022; expected_name = 'Венера' }
+    #  @{ name = 'Костолом'; year = 2023; content_type = 'movie'; expected_name = 'Костолом' }
+    # Сексмиссия Seksmisja
+    # @{ name = 'Сексмиссия'; year = 1984; content_type = 'movie'; expected_name = 'Сексмиссия' }
+    # Венера     Venus
+    # @{ name = 'Венера'; year = 2022; content_type = 'movie'; expected_name = 'Венера' }
+    
+    @{ name = 'ГДР'; year = 2024; content_type = 'tvshow'; expected_name = 'ГДР' }
   ) {
-    $result = Find-TmdbMovieSingle -Name $name -OriginalName $original_name -Year $year -ErrorAction Continue
+    $results = @(Find-Tmdb -Name $name -Year $year -ContentType $content_type -ErrorAction Continue)
+    Write-Verbose "results count: [$($results.Length)]"
+    Write-Verbose "results:`r`n===`r`n$($results | ConvertTo-Yaml)`r`n==="
+    Write-Host "`r`n$($results | select id, name, original_name, year, original_language | ft -AutoSize | Out-String)"
+  }
+}
+
+Describe 'Find-TmdbSingle' {
+  It 'name: [<name>], year: [<year>], expected_name: [<expected_name>]' -ForEach @(
+    ### Movies:
+    #  @{ name = 'Костолом'; original_name = 'Ruthless'; year = 2023; content_type = 'movie'; expected_name = 'Костолом' }
+    # Сексмиссия Seksmisja
+    # @{ name = 'Сексмиссия'; original_name = ''; year = 1983; content_type = 'movie'; expected_name = 'Сексмиссия' }
+    # Венера     Venus
+    # @{ name = 'Венера'; original_name = ''; year = 2022; content_type = 'movie'; expected_name = 'Венера' }
+    
+    ### TVShows
+    # @{ name = 'ГДР'; year = 2024; content_type = 'tvshow'; expected_name = 'ГДР' }
+    # @{ name = 'Бивис и Баттхед'; year = 2023; content_type = 'tvshow'; expected_name = 'Бивис и Баттхед Майка Джаджа' }
+    @{ name = 'Иные'; year = 2023; original_language = 'ru'; content_type = 'tvshow'; expected_name = 'Иные' }
+    
+  ) {
+    $result = Find-TmdbSingle -Name $name `
+                              -OriginalName $original_name `
+                              -OriginalLanguage $original_language `
+                              -Year $year `
+                              -ContentType $content_type `
+                              -ErrorAction Continue
+    
     # Write-Verbose "results count: [$($result.Length)]"
     # Write-Verbose "results:`r`n===`r`n$($results | ConvertTo-Yaml)`r`n==="
     Write-Verbose "result:`r`n===`r`n$($result | ConvertTo-Json -Depth 5)`r`n==="
-    Write-Host "`r`n$($result.Result | select id, title, original_title, original_language, release_date, year | ft -AutoSize | Out-String)"
+    Write-Host "`r`n$($result.Result | select id, name, original_name, year, original_language | ft -AutoSize | Out-String)"
   }
 }
-
-Describe 'Find-TmdbTVShows' {
-  It 'name: [<name>], year: [<year>], expected_name: [<expected_name>]' -ForEach @(
-    @{ name = 'ГДР'; year = 2024; expected_name = 'ГДР' }
-  ) {
-    $results = @(Find-TmdbTVShows -Name $name -Year $year)
-    Write-Verbose "results count: [$($results.Length)]"
-    Write-Verbose "results:`r`n===`r`n$($results | ConvertTo-Yaml)`r`n==="
-    Write-Host "`r`n$($results | select id, name, original_name, original_language, first_air_date | ft -AutoSize | Out-String)"
-  }
-}
-
-Describe 'Find-TmdbTVShowSingle' {
-  It 'name: [<name>], year: [<year>], expected_name: [<expected_name>]' -ForEach @(
-    #    @{ name = 'ГДР'; year = 2024; expected_name = 'ГДР' }
-    #    @{ name = 'bivis i batthed'; year = 2023; expected_name = 'Бивис и Баттхед Майка Джаджа' }
-    @{ name = 'Дом ниндзя'; year = 2024; expected_name = 'Бивис и Баттхед Майка Джаджа' }
-    
-  ) {
-    $result = Find-TmdbTVShowSingle -Name $name -Year $year -TryTranslitName
-    # Write-Verbose "result:`r`n===`r`n$($result | ConvertTo-Yaml)`r`n==="
-    Write-Host "`r`nresult:`r`n$($result | fl * | Out-String)"
-    Write-Host "`r`nresult.Result:`r`n$($result.Result | select id, name, original_name, original_language, first_air_date | ft -AutoSize | Out-String)"
-    $result.Result.name | Should -Be $expected_name
-  }
-}
-
-
 
 Describe 'Get-TmdbVideos' {
   It 'id: [<id>], year: [<year>], expected_key: [<expected_key>]' -ForEach @(
@@ -90,9 +91,11 @@ Describe 'Get-TmdbVideos' {
 
 Describe 'Get-TmdbTrailers' {
   It 'id: [<id>], content_type: [<content_type>], expected_key: [<expected_key>]' -ForEach @(
-    @{ id = 603692; content_type = 'movie'; expected_key = '3Ol0ptL_ppk' } # John Wick 4
+    # @{ id = 603692; content_type = 'movie'; expected_key = '3Ol0ptL_ppk' } # John Wick 4
     # @{ id = 986088; content_type = 'movie'; expected_key = 'M6zQZ0_Re8o' } # Control
+    @{ id = 19673; content_type = 'movie'; expected_key = '2rHia6FcBjE' } # Seksmissia
     
+
     #    @{ id = 90027; content_type = 'tvshow'; expected_key = '369LHB9N-Ro' }
     #    @{ id = 245303; content_type = 'tvshow'; expected_key = 'vi6WXkYxC6s' }
   ) {
@@ -103,5 +106,3 @@ Describe 'Get-TmdbTrailers' {
     $result[0].key | Should -Be $expected_key
   }
 }
-
-

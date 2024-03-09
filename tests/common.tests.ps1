@@ -15,7 +15,7 @@ BeforeAll {
 Describe 'Get-Config' {
   It 'path: [<path>]' -ForEach @(
     # @{ path = 'test_get_config.yml' }
-    @{ path = 'full.yml' }
+    @{ path = 'multimedia_helpers.yml' }
   ) {
     $path = Join-Path $configs_dir $path
     

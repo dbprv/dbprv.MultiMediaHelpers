@@ -11,7 +11,7 @@ BeforeAll {
   $ErrorActionPreference = 'Stop'
   $VerbosePreference = 'Continue'
   
-  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "full.yml"
+  $env:MMH_CONFIG_PATH = Join-Path $configs_dir "multimedia_helpers.yml"
 }
 
 
@@ -98,15 +98,12 @@ Describe 'Create-KodiMoviesNfo' {
   It 'folder: [<folder>], countries_any: [<countries_any>], limit: [<limit>]' -ForEach @(
     ### Фильмы:
     # @{ folder = 'H:\Video\Фильмы'; type = 'Movie'; countries_any = @(); limit = 333 }
-    #  @{ folder = 'H:\video_test\movies'; type = 'Movie'; countries_any = @(); limit = 3 }
-    
     #  @{ folder = 'H:\Video\Россия'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 333 }
-    #  @{ folder = 'H:\Video\Россия\test'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 3 }
+    #  @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
+     @{ folder = 'H:\video_test\movies'; type = 'Movie'; countries_any = @(); limit = 3 }
     
-#  @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
-
     ### Сериалы:
-     @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
+    # @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
     #  @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
     # @{ folder = 'H:\video_test\tvshows'; type = 'TVShow'; countries_any = @(); limit = 333 }
     
@@ -125,26 +122,18 @@ Describe 'Get-KodiNfo' {
   
   It 'folder: [<folder>], limit: [<limit>]' -ForEach @(
     @{ folder = 'H:\Video\Фильмы'; limit = 333 }
-    @{ folder = 'H:\Video\Детское'; limit = 333 }    
-    @{ folder = 'H:\Video\Сериалы'; limit = 333 }    
-    @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
+    # @{ folder = 'H:\Video\Россия'; limit = 333 }
+    # @{ folder = 'H:\Video\Детское'; limit = 333 }
+
+    # @{ folder = 'H:\Video\Сериалы'; limit = 333 }
+    # @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
     
   ) {
     Write-Host "`r`n=== $folder ==="
     
     $result = Get-KodiNfo -Folder $folder -Limit $limit
     #    Write-Verbose "Result: [$result]"
-#    Write-Host "result:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
-    
-#    $no_trailer = @($result | ? { !$_.has_trailer })
-#    if ($no_trailer) {
-#      Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo yellow
-#    }
-#    
-#    $no_tmdb_id = @($result | ? { !$_.id_tmdb })
-#    if($no_tmdb_id) {
-#      Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
-#    }
+    #    Write-Host "result:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
     
     $result | Should -Not -BeNullOrEmpty
   }
@@ -153,17 +142,31 @@ Describe 'Get-KodiNfo' {
 
 Describe 'Check-KodiNfo' {
   BeforeAll {
-    $VerbosePreference = 'SilentlyContinue'
+    # $VerbosePreference = 'SilentlyContinue'
   }
   
   It 'folder: [<folder>], limit: [<limit>]' -ForEach @(
-    @{ folder = 'H:\Video\Фильмы'; limit = 333 }
-    @{ folder = 'H:\Video\Детское'; limit = 333 }
+    # @{ folder = 'H:\Video\Фильмы'; limit = 333 }
+    # @{ folder = 'H:\Video\Россия'; limit = 333 }
+    # @{ folder = 'H:\Video\Детское'; limit = 333 }
+
     @{ folder = 'H:\Video\Сериалы'; limit = 333 }
     @{ folder = 'H:\Video\Сериалы2'; limit = 333 }
     
   ) {
     $result = Check-KodiNfo -Folder $folder -Limit $limit
+    Write-Verbose "Result: [$result]"
+    $result | Should -BeNullOrEmpty
+  }
+}
+
+Describe 'Export-KodiNfoCsv' {
+  It 'folder: [<folder>], result_path: [<result_path>]' -ForEach @(
+    # @{ folders = @('H:\Video\Фильмы', 'H:\Video\Россия', 'H:\Video\Детское'); result_path = "H:\Video\Movies.csv" }
+    @{ folders = @('H:\Video\Сериалы', 'H:\Video\Сериалы2'); result_path = "H:\Video\TVShows.csv" }
+    
+  ) {
+    $result = Export-KodiNfoCsv -Folders $folders -ResultPath $result_path
     Write-Verbose "Result: [$result]"
     $result | Should -BeNullOrEmpty
   }

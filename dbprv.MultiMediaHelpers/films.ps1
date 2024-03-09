@@ -5,6 +5,7 @@
 . "$PSScriptRoot\logging.ps1"
 . "$PSScriptRoot\text.ps1"
 . "$PSScriptRoot\tmdb.ps1"
+. "$PSScriptRoot\youtube.ps1"
 
 if (0) {
   . "$PSScriptRoot\kinopoisk.ps1"
@@ -44,12 +45,20 @@ class ExportKodiNfoResult {
 class KinopoiskInfo {
   $Id
   $Search
+  $SearchMessage
 }
 
 class TmdbInfo {
   $Id
   $Search
-  $Trailers
+  $SearchMessage
+  $Trailer
+}
+
+class YoutubeInfo {
+  #  $TrailerId
+  #  $TrailerUrl
+  $Trailer
 }
 
 class MediaInfo {
@@ -63,6 +72,7 @@ class MediaInfo {
   #  [hashtable]$KP
   [KinopoiskInfo]$KP = [KinopoiskInfo]::new()
   [TmdbInfo]$TMDB = [TmdbInfo]::new()
+  [YoutubeInfo]$Youtube = [YoutubeInfo]::new()
 }
 
 
@@ -261,7 +271,8 @@ function Export-KodiNfo {
   $parsed_info = $MediaInfo.ParsedName
   $kp_info = $MediaInfo.KP.Search
   $tmdb_info = $MediaInfo.TMDB.Search
-  $tmdb_trailers = $MediaInfo.TMDB.Trailers
+  $tmdb_trailer = $MediaInfo.TMDB.Trailer
+  $youtube_trailer = $media_info.Youtube.Trailer
   
   $xml = [xml]$kodi_nfo_templates[$content_type]
   
@@ -454,10 +465,13 @@ function Export-KodiNfo {
   }
   
   ### Trailers
-  if ($tmdb_trailers) {
-    $tmdb_trailers | select -First 1 | % {
-      $doc.AppendChild($xml.CreateElement("trailer")).InnerText = $_.KodiUrl
-    }
+  if ($tmdb_trailer) {
+    $doc.AppendChild($xml.CreateElement("trailer")).InnerText = $tmdb_trailer.KodiUrl
+    #    $tmdb_trailers | select -First 1 | % {
+    #      $doc.AppendChild($xml.CreateElement("trailer")).InnerText = $_.KodiUrl
+    #    }
+  } elseif ($youtube_trailer) {
+    $doc.AppendChild($xml.CreateElement("trailer")).InnerText = $youtube_trailer.KodiUrl
   }
   
   ### generator
@@ -605,6 +619,7 @@ function Create-KodiMoviesNfo {
                                                  -TryTranslitName
           
           $media_info.KP.Search = $kp_search.Result
+          $media_info.KP.SearchMessage = $kp_search.Message
           
           if ($kp_search.Success) {
             
@@ -615,11 +630,9 @@ function Create-KodiMoviesNfo {
             ### TMDB ID необходим для инфы об эпизодах сериалов и для трейлеров
             if (!$tmdb_id) {
               $tmdb_search = $null
+              $imdb_id = $kp_search.Result.externalId.imdb
               
               ### Перебираем все имена из результата Кинопоиска
-              
-              #@($j.kp.Search.name, $j.kp.Search.alternativeName, $j.kp.Search.enName, $j.kp.Search.names | %{$_})
-              
               $names = [List[string]]::new()
               
               $kp_search.Result.name, $kp_search.Result.alternativeName, $kp_search.Result.enName `
@@ -633,28 +646,22 @@ function Create-KodiMoviesNfo {
               }
               if (!$names) {
                 throw "Empty names list for TMDB search"
-              }              
+              }
               Write-Verbose "Create-KodiMoviesNfo: search TMDB by names($($names.Count)): [`r`n$($names -join "`r`n")`r`n]"
+              
+              $params = @{
+                ImdbId           = $imdb_id
+                ContentType      = $ContentType
+                OriginalName     = $kp_search.Result.alternativeName
+                Year             = $kp_search.Result.year
+                OriginalLanguage = $kp_search.Result.OriginalLanguage
+              }
               
               foreach ($n in $names) {
                 Write-Verbose "Create-KodiMoviesNfo: search TMDB by name '$n'"
-                
                 ### Года Кинопоиска и TMDB могут не совпадать (например "Иные")
-                
-                $params = @{
-                  Name = $n
-                  Year = $kp_search.Result.year
-                }
-                
-                if ($ContentType -eq 'Movie') {
-                  $params.OriginalName = $kp_search.Result.alternativeName
-                  $tmdb_search = Find-TmdbMovieSingle @params -ErrorAction Continue
-                } elseif ($ContentType -eq 'TVShow') {
-                  $params.OriginalName = $kp_search.Result.name
-                  $tmdb_search = Find-TmdbTVShowSingle @params -ErrorAction Continue
-                } else {
-                  throw "NOT IMPLEMENTED: for content type '$ContentType'"
-                }
+                $params.Name = $n
+                $tmdb_search = Find-TmdbSingle @params -ErrorAction Continue
                 
                 if ($tmdb_search.Success -and $tmdb_search.Result.id) {
                   Write-Host "TMDB result:`r`n$($tmdb_search.Result | select id, title, name, original_title, original_name, original_language, release_date, year | ft -AutoSize | Out-String)" -fo Cyan
@@ -663,23 +670,71 @@ function Create-KodiMoviesNfo {
                   Add-Member -InputObject $kp_search.Result.externalId -MemberType NoteProperty -Name tmdb -Value $tmdb_id -Force
                   break
                 } else {
-                  #                  Write-Host "DEBUG Create-KodiMoviesNfo Find-TmdbTVShowSingle error"
                   $warnings.Add("TMDB search: $($tmdb_search.Message)")
                 }
               }
+            } else {
+              $tmdb_search = [FindTmdbResult]@{
+                #                Name    = $Name
+                #                Year    = $Year
+                #    CountriesAny = $CountriesAny
+                Type    = $ContentType
+                Success = $true
+                Message = "TMDB ID in Kinopoisk result"
+              }
             }
+            
+            $youtube_region = $config.Youtube.Region
             
             ### Add trailer
             if ($tmdb_id) {
               $media_info.TMDB.Id = $tmdb_id
-              $media_info.TMDB.Trailers = @(Get-TmdbTrailers -Id $tmdb_id -ContentType $ContentType)
+              if ($tmdb_search) {
+                $media_info.TMDB.SearchMessage = $tmdb_search.Message
+              }
+              
+              $tmdb_trailers = @(Get-TmdbTrailers -Id $tmdb_id -ContentType $ContentType | ? { $_.YoutubeId })
+              ### Валидация трейлера: иногда трейлер есть на TMDB, но удален, закрыт и т.д.
+              $cnt = 0
+              foreach ($trailer in $tmdb_trailers) {
+                $cnt++
+                $youtube_video = Get-YoutubeVideo -Id $trailer.YoutubeId
+                if ($youtube_video) {
+                  
+                  ### Проверить, что трейлер не заблокирован в текущем регионе:                  
+                  $blocked_regions = @($youtube_video.contentDetails.regionRestriction.blocked)
+                  if ($blocked_regions -and ($blocked_regions -contains $youtube_region)) {
+                    Write-Verbose "Create-KodiMoviesNfo: TMDB trailer #$($cnt) blocked in region $youtube_region, skip: '$($trailer.YoutubeId)'"
+                    continue
+                  }
+                  
+                  ### Проверить только разрешенные регионы:                  
+                  $allowed_regions = @($youtube_video.contentDetails.regionRestriction.allowed)
+                  if ($allowed_regions -and ($allowed_regions -notcontains $youtube_region)) {
+                    Write-Verbose "Create-KodiMoviesNfo: TMDB trailer #$($cnt) not allowed in region $youtube_region, skip: '$($trailer.YoutubeId)'"
+                    continue
+                  }
+                  
+                  Write-Verbose "Create-KodiMoviesNfo: select TMDB trailer #$($cnt): '$($trailer.YoutubeId)'"
+                  $media_info.TMDB.Trailer = $trailer
+                  break
+                }
+                Write-Verbose "Create-KodiMoviesNfo: invalid TMDB trailer #$($cnt): '$($trailer.YoutubeId)'"
+              }
+              
             } else {
               Write-Warning "Create-KodiMoviesNfo: not found in TMDB"
             }
             
-            $export_result = Export-KodiNfo -MediaInfo $media_info
+            ### Если трейлер на TMDB не найден, ищем на Youtube:
+            if ((!$media_info.TMDB.Trailer) -and $config.Youtube) {
+              $media_info.Youtube.Trailer = Find-YoutubeTrailer -Name $parsed_name.Name -ContentType $ContentType
+            }
             
+            ### Экспорт всей найденной инфы в Kodi .nfo:
+            $export_result = Export-KodiNfo -MediaInfo $media_info
             $success = $true
+            
           } else {
             throw "Can not find movie at Kinopoisk: '$($parsed_name.Name)'"
             #          throw "Can not find movie in Kinopoisk results"
@@ -699,19 +754,35 @@ function Create-KodiMoviesNfo {
           Success  = $success
           ItemPath = $item.FullName
           ItemName = Split-Path $item.FullName -Leaf
+          
+          ### Parsed info:
           ParsedName = $parsed_name.Name
           NameTranslit = $kp_search.NameTranslit
           ParsedYear = $parsed_name.Year
           #        KinopoiskFound = $kp_find_result.AllResults.Length
-          KinopoiskResult = $kp_search.Result
+          
+          ### Summary info:
           KinopoiskResultStr = "$($kp_search.Result.name) / $($kp_search.Result.alternativeName) / $($kp_search.Result.year)$($season_str)"
-          KinopoiskAllResults = $kp_search.AllResults
+          TmdbResultStr = "$($tmdb_search.Result.name) / $($tmdb_search.Result.original_name) / $($tmdb_search.Result.year)$($season_str)"
+          
+          ### Kinopoisk:
           KinopoiskId = $kp_search.Result.id
-          TmdbId = $tmdb_id
-          Message  = $kp_search.Message
-          ExportResult = $export_result
+          KinopoiskResult = $kp_search.Result
+          KinopoiskAllResults = $kp_search.AllResults
+          KinopoiskMessage = $kp_search.Message
+          
+          ### TMDB:
+          TmdbId   = $tmdb_id
+          TmdbMessage = $tmdb_search.Message
+          TmdbTrailer = $media_info.TMDB.Trailer.KodiUrl
+          
+          YoutubeTrailer = $media_info.Youtube.Trailer.KodiUrl
+          
           Warnings = $warnings
           Errors   = $errors
+          
+          ExportWarnings = $export_result.Warnings
+          ExportErrors = $export_result.Errors
         }
       )
       
@@ -740,7 +811,8 @@ function Create-KodiMoviesNfo {
       }
       
       Write-Host "`r`nShort list:" -fo Green
-      Write-Host "$(($ok | select ParsedName, NameTranslit, ItemName, KinopoiskResultStr, Message | ft -auto | Out-String).TrimEnd())" -fo Green
+      Write-Host "$(($ok | select ParsedName, NameTranslit, ItemName, KinopoiskResultStr, TmdbResultStr | ft -auto | Out-String).TrimEnd())" -fo Green
+      #    KinopoiskMessage
     }
     
     $warn = @($stat | ? { $_.Warnings -or $_.ExportResult.Warnings.Count })
@@ -772,7 +844,7 @@ function Create-KodiMoviesNfo {
       }
       
       Write-Host "`r`nShort list:" -fo Red
-      Write-Host "$($err | select ParsedName, NameTranslit, ItemName, Message | ft -auto | Out-String)" -fo red
+      Write-Host "$($err | select ParsedName, NameTranslit, ItemName, KinopoiskMessage | ft -auto | Out-String)" -fo red
       
     }
     
@@ -796,32 +868,57 @@ function Create-KodiMoviesNfo {
 
 function Get-KodiNfo {
   [CmdletBinding()]
-  param (
-    [Parameter(Mandatory = $true)]
+  param
+  (
+    [Parameter(Mandatory = $true,
+               ValueFromPipeline = $true)]
     [string]$Folder,
     [int]$Limit = [int]::MaxValue
   )
   
-  dir $Folder -Include @("*.nfo") -Recurse -File | select -First $Limit | % {
-    $file = $_
-    Write-Verbose "Get-TVShowsKodiNfo: process file '$($file.FullName)'"
-    $xml = [xml](gc -LiteralPath $file.FullName -Raw -ErrorAction 'Stop')
-    $root = $xml.DocumentElement
-    $ht = [ordered]@{
-      FilePath      = $file.FullName
-      DirName       = $file.Directory.Name
-      title         = $root.title
-      originaltitle = $root.originaltitle
-      year          = $root.year
-      season        = $root.season
-      has_trailer       = [bool]$root.trailer
+  process {
+    
+    dir $Folder -Include @("*.nfo") -Recurse -File | select -First $Limit | % {
+      $file = $_
+      Write-Verbose "Get-TVShowsKodiNfo: process file '$($file.FullName)'"
+      $xml = [xml](gc -LiteralPath $file.FullName -Raw -ErrorAction 'Stop')
+      $root = $xml.DocumentElement
+      $ht = [ordered]@{
+        Folder       = $Folder
+        Subfolder    = if ($file.DirectoryName -ne $Folder) { $file.DirectoryName.Substring($Folder.Length + 1) } else { '' }
+        #        $file.DirectoryName
+        #        Dir           = $file.Directory.FullName.Substring($Folder.Length + 1)
+        FileName     = $file.Name
+        #        FilePath      = $file.FullName
+        #        FileRelPath = $file.FullName.Substring($Folder.Length + 1)
+        #        DirName       = $file.Directory.Name
+        Name         = $root.title
+        OriginalName = $root.originaltitle
+        Year         = $root.year
+        TVShowSeason = $root.season
+        HasTrailer   = [bool]$root.trailer
+      }
+      
+      $xml.DocumentElement.ratings.rating | % {
+        $ht["rating_$($_.name)"] = "$($_.value)".Replace('.', ',')
+        $ht["votes_$($_.name)"] = $_.votes
+        #        $ht["rating_$($_.GetAttribute('name'))"] = "$($_.value.innerText) ($($_.votes.innerText))"
+      }
+      
+      $xml.DocumentElement.uniqueid | % {
+        $ht["id_$($_.GetAttribute('type'))"] = $_.innerText
+      }
+      
+      $ht.YoutubeTrailer = if ($root.trailer) {
+        $youtube_id = ($root.trailer -split '=')[-1]
+        if ($youtube_id) {
+          "https://www.youtube.com/watch?v=$youtube_id"
+        }
+      } else { '' }
+      
+      [PSCustomObject]$ht
     }
     
-    $xml.DocumentElement.uniqueid | % {
-      $ht["id_$($_.GetAttribute('type'))"] = $_.innerText
-    }
-    
-    [PSCustomObject]$ht
   }
 }
 
@@ -838,14 +935,36 @@ function Check-KodiNfo {
   $result = Get-KodiNfo -Folder $folder -Limit $limit
   Write-Host "All Nfo:`r`n$(($result | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo Cyan
   
-  $no_trailer = @($result | ? { !$_.has_trailer })
+  $no_trailer = @($result | ? { !$_.HasTrailer })
   if ($no_trailer) {
-    Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo yellow
+    Write-Host "`r`nNo trailer:`r`n$(($no_trailer | select Folder, Subfolder, FileName, title, originaltitle, year, tvshow_season, id_kinopoisk, id_tmdb, id_imdb | ft -AutoSize | Out-String).Trim())" -fo yellow
   }
   
   $no_tmdb_id = @($result | ? { !$_.id_tmdb })
   if ($no_tmdb_id) {
-    Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
+    Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select Folder, Subfolder, FileName, title, originaltitle, year, tvshow_season, id_kinopoisk, id_tmdb, id_imdb | ft -AutoSize | Out-String).Trim())" -fo red
+    #    Write-Host "`r`nNo TMDB ID:`r`n$(($no_tmdb_id | select * -ExcludeProperty FilePath | ft -AutoSize | Out-String).Trim())" -fo red
   }
   
+  
+}
+
+function Export-KodiNfoCsv {
+  [CmdletBinding(DefaultParameterSetName = 'Dir')]
+  param
+  (
+    [string[]]$Folders,
+    [string]$ResultPath
+  )
+  
+  Write-Verbose "Export-KodiNfoCsv: begin"
+  Write-Verbose "Export-KodiNfoCsv: Folders($($Folders.Length)):`r`n$($Folders -join "`r`n")"
+  Write-Verbose "Export-KodiNfoCsv: ResultPath: '$ResultPath'"
+  
+  #Folder	Subfolder	FileName	Name	OriginalName	Year	TVShowSeason	HasTrailer	rating_kinopoisk	votes_kinopoisk	rating_imdb	votes_imdb	id_kinopoisk	id_imdb	id_tmdb	id_kpHD	YoutubeTrailer
+  $Folders | Get-KodiNfo | Sort-Object rating_kinopoisk, rating_imdb -Descending `
+  | select Name, OriginalName, Year, rating_kinopoisk, rating_imdb, votes_kinopoisk, votes_imdb, Folder, Subfolder, FileName, TVShowSeason, id_kinopoisk, id_imdb, id_tmdb, id_kpHD, HasTrailer, YoutubeTrailer `
+  | Export-Csv $ResultPath -Delimiter ";" -NoTypeInformation -Force -Encoding "UTF8"
+  
+  Write-Verbose "Export-KodiNfoCsv: end"
 }

@@ -49,6 +49,11 @@ Tmdb:
   ApiUrl: https://api.themoviedb.org/3
   AccessToken: "{env:TMDB_ACCESS_TOKEN}"
 
+Youtube:
+  ApiUrl: https://youtube.googleapis.com/youtube/v3
+  ApiKey: "{env:YOUTUBE_API_KEY}"
+  Region: RU
+
 VideoFilesExtensions:
   - mkv
   - mp4
