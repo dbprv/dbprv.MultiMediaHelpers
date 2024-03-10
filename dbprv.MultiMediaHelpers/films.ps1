@@ -65,6 +65,7 @@ class MediaInfo {
   #  $Item
   [string]$Path
   [string]$Name
+  #  [type]$Type
   [string]$BaseName
   [string]$Directory
   [MediaContentType]$ContentType
@@ -490,7 +491,16 @@ function Export-KodiNfo {
   ### Save
   $nfo_path = ''
   if ($content_type -eq 'Movie') {
-    $nfo_path = Join-Path $MediaInfo.Directory ($MediaInfo.BaseName + ".nfo")
+    if (Test-Path -LiteralPath $MediaInfo.Path -PathType Leaf) {
+      ### nfo for files save to <file_name>.nfo:
+      $nfo_path = Join-Path $MediaInfo.Directory ($MediaInfo.BaseName + ".nfo")
+    } elseif (Test-Path -LiteralPath $MediaInfo.Path -PathType Container) {
+      ### nfo for dirs save to movie.nfo:
+      $nfo_path = Join-Path $MediaInfo.Directory "movie.nfo"
+    } else {
+      throw "Unknown item type: '$($MediaInfo.Path)'"
+    }
+    
   } elseif ($content_type -eq 'TVShow') {
     $nfo_path = Join-Path $MediaInfo.Directory "tvshow.nfo"
   } else {
@@ -525,26 +535,65 @@ function Create-KodiMoviesNfo {
     
     $config = Get-Config
     $video_masks = @($config.VideoFilesExtensions | % { "*.$_" })
+    Write-Host "Create-KodiMoviesNfo: video_masks: [$video_masks]"
     
+    $disc_rip_dirs = @(
+      'BDMV'
+      'VIDEO_TS'
+    )
+    if ($config.DiskRipDirs) {
+      $disc_rip_dirs = @($config.DiskRipDirs)
+    }
     
     $stat = [List[PSCustomObject]]::new()
     
-    $items = @(if ($ContentType -eq 'Movie') {
-        dir $Folder -Include $video_masks -File -Recurse -Force | select -First $Limit
-      } elseif ($ContentType -eq 'TVShow') {
-        ### Только каталоги с видеофайлами:
-        #$video_masks = @("*.mkv", "*.mp4")
-        dir $Folder -Directory -Force | ? {
-          ### Если в имени будут скобки [], надо экранировать:
-          $fn = [System.Management.Automation.WildcardPattern]::Escape($_.FullName)
-          $video_masks | % { dir "$fn\$_" }
-        } | select -First $Limit
-        #      dir $Folder -Directory -Exclude $config.ExcludeFolders -Recurse | select -First $Limit
-      } else {
-        throw "NOT IMPLEMENTED: content type '$ContentType'"
-      })
+    $items = @(
+      $(if ($ContentType -eq 'Movie') {
+          ### Get dirs - disc-rips:
+          $dirs = @(dir $Folder -Recurse -Directory | ? { $_.EnumerateDirectories() | ? { $_.Name -in $disc_rip_dirs } })
+          $dirs_arr = @($dirs | % { $_.FullName + [io.path]::DirectorySeparatorChar })
+          
+          ### Get files:
+          if ($dirs_arr) {
+            ### Get files not in disc-rips dirs:
+            Write-Verbose "Create-KodiMoviesNfo: dirs_arr:`r`n$($dirs_arr -join "`r`n")"
+            dir $Folder -Include $video_masks -File -Recurse -Force `
+            | ? { !$($f = $_; $dirs_arr | % { $f.FullName.StartsWith($_) | ? { $_ } }) } `
+            | select -First $Limit
+            #          | ? {
+            #            $f = $_
+            #            $include = $true
+            #            foreach ($d in $dirs_arr) {
+            #              if ($f.FullName.StartsWith($d)) {
+            #                $include = $false
+            #              }
+            #            }
+            #            $include
+            #          } | select -First $Limit
+            
+            #             !($dirs_arr | % { $f.FullName.StartsWith($_) })
+            
+            $dirs
+            
+          } else {
+            dir $Folder -Include $video_masks -File -Recurse -Force | select -First $Limit
+          }
+          
+        } elseif ($ContentType -eq 'TVShow') {
+          ### Только каталоги с видеофайлами:
+          #$video_masks = @("*.mkv", "*.mp4")
+          dir $Folder -Directory -Force | ? {
+            ### Если в имени будут скобки [], надо экранировать:
+            $fn = [System.Management.Automation.WildcardPattern]::Escape($_.FullName)
+            $video_masks | % { dir "$fn\$_" }
+          } | select -First $Limit
+          #      dir $Folder -Directory -Exclude $config.ExcludeFolders -Recurse | select -First $Limit
+        } else {
+          throw "NOT IMPLEMENTED: content type '$ContentType'"
+        }) | Sort-Object FullName
+    )
     
-    Write-Verbose "Process $($items.Length) $($ContentType)(s)"
+    Write-Verbose "All items to process: $($items.Length) $($ContentType)(s):`r`n$($items.FullName -join "`r`n")"
     #  return
     
     $save_info_dir = Join-Path $Folder ".media_info"
@@ -574,6 +623,7 @@ function Create-KodiMoviesNfo {
         Name      = $item.Name
         BaseName  = $item.BaseName
         Path      = $item.FullName
+        #        Type      = $item.GetType()
         Directory = $(if ($item.PSIsContainer) { $item.FullName } else { $item.DirectoryName })
         ContentType = $ContentType
       }

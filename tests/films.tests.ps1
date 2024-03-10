@@ -99,9 +99,10 @@ Describe 'Create-KodiMoviesNfo' {
     ### Фильмы:
     # @{ folder = 'H:\Video\Фильмы'; type = 'Movie'; countries_any = @(); limit = 333 }
     #  @{ folder = 'H:\Video\Россия'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 333 }
-    #  @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
-     @{ folder = 'H:\video_test\movies'; type = 'Movie'; countries_any = @(); limit = 3 }
-    
+     @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
+    # @{ folder = 'H:\Video\HighQuality'; type = 'Movie'; countries_any = @(); limit = 333 }
+    #  @{ folder = 'H:\video_test\movies'; type = 'Movie'; countries_any = @(); limit = 3 }
+     
     ### Сериалы:
     # @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
     #  @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
