@@ -545,7 +545,7 @@ function Create-KodiMoviesNfo {
       $disc_rip_dirs = @($config.DiskRipDirs)
     }
     
-    $season_dir_pattern = '^(S|season\s*|сезон\s*)(?<season>\d{1,2})$'
+    $season_dir_pattern = '^(S|season[\s_]*|сезон[\s_]*)(?<season>\d{1,2})$'
     
     $stat = [List[PSCustomObject]]::new()
     

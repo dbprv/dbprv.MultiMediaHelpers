@@ -105,8 +105,8 @@ Describe 'Create-KodiMoviesNfo' {
      
     ### Сериалы:
     # @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
-    #  @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
-     @{ folder = 'H:\Video\Аниме'; type = 'TVShow'; countries_any = @(); limit = 333 }
+     @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
+    #  @{ folder = 'H:\Video\Аниме'; type = 'TVShow'; countries_any = @(); limit = 333 }
     # @{ folder = 'H:\video_test\tvshows'; type = 'TVShow'; countries_any = @(); limit = 333 }
     
   ) {
