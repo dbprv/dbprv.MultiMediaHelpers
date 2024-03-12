@@ -41,22 +41,23 @@ Describe 'Find-KinopoiskMovie' {
 
 Describe 'Find-KinopoiskMovieSingle' {
   It 'name: [<name>], year: [<year>], countries: [<countries>], expected_name: [<expected_name>]' -ForEach @(
+    ### Movies:
     # @{ name = 'farang'; year = 2023; countries = @(); type = 'movie'; expected_name = 'Чужак' }
     #  @{ name = 'Kamenschik'; year = 2023; countries = @(); type = 'movie'; expected_name = 'Каменщик' }
     #  @{ name = 'Telekinez'; year = 2019; countries = @('США'); type = 'movie'; expected_name = 'Telekinetic' }
-#    @{ name = 'Telekinez'; year = 2023; countries = @('Россия'); type = 'movie'; expected_name = 'Телекинез' }
+    #    @{ name = 'Telekinez'; year = 2023; countries = @('Россия'); type = 'movie'; expected_name = 'Телекинез' }
     #    @{ name = 'Телекинез'; year = 2023; countries = @('Россия'); type = 'movie'; expected_name = 'Телекинез' }
-#    @{ name = 'Papa ne zvezdi'; year = 2023; countries = @(); type = 'movie'; expected_name = 'Папа, не звезди!' }
-#    @{ name = 'Sexmission'; year = 1983; countries = @(); type = 'movie'; expected_name = 'Сексмиссия' }
+    #    @{ name = 'Papa ne zvezdi'; year = 2023; countries = @(); type = 'movie'; expected_name = 'Папа, не звезди!' }
+    #    @{ name = 'Sexmission'; year = 1983; countries = @(); type = 'movie'; expected_name = 'Сексмиссия' }
+    # @{ name = 'Bruys vsemoguwij'; year = 2003; countries = @(); type = 'movie'; expected_name = 'Брюс Всемогущий' }
     
-  #  @{ name = 'Foundation'; year = 2021; countries = @(); type = 'tvshow'; expected_name = 'Основание' }
+    ### TVShows:
+    #  @{ name = 'Foundation'; year = 2021; countries = @(); type = 'tvshow'; expected_name = 'Основание' }
     #  @{ name = 'Иные'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
-  #  @{ name = 'Inye'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
-#    @{ name = 'Beavis and Butt-Head'; year = 2022; countries = @(); type = 'tvshow'; expected_name = 'Бивис и Батт-Хед' }
-
-    ###
-    @{ name = 'Bruys vsemoguwij'; year = 2003; countries = @(); type = 'movie'; expected_name = 'Брюс Всемогущий' }
-
+    #  @{ name = 'Inye'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Иные' }
+    #    @{ name = 'Beavis and Butt-Head'; year = 2022; countries = @(); type = 'tvshow'; expected_name = 'Бивис и Батт-Хед' }
+    @{ name = 'Shingeki no Kyojin The Final Season'; year = 0; countries = @(); type = 'tvshow'; expected_name = 'Атака Титанов: Финал. Расширенная версия' }
+    
   ) {
     $result = Find-KinopoiskMovieSingle -Name $name `
                                         -Year $year `

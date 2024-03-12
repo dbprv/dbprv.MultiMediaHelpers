@@ -20,9 +20,9 @@ class FindKinopoiskResult {
 $kinopoisk_content_types = @{
   'movie'     = @('movie', 'cartoon')
   'film'      = @('movie', 'cartoon')
-  'tvshow'    = @('tv-series', 'animated-series')
-  'tv-series' = @('tv-series', 'animated-series')
-  'tvseries'  = @('tv-series', 'animated-series')
+  'tvshow'    = @('tv-series', 'animated-series', 'anime')
+  'tv-series' = @('tv-series', 'animated-series', 'anime')
+  'tvseries'  = @('tv-series', 'animated-series', 'anime')
 }
 
 $kinopoisk_country_languages = @{

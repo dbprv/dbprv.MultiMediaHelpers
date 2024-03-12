@@ -545,6 +545,8 @@ function Create-KodiMoviesNfo {
       $disc_rip_dirs = @($config.DiskRipDirs)
     }
     
+    $season_dir_pattern = '^(S|season\s*|сезон\s*)(?<season>\d{1,2})$'
+    
     $stat = [List[PSCustomObject]]::new()
     
     $items = @(
@@ -558,8 +560,7 @@ function Create-KodiMoviesNfo {
             ### Get files not in disc-rips dirs:
             Write-Verbose "Create-KodiMoviesNfo: dirs_arr:`r`n$($dirs_arr -join "`r`n")"
             dir $Folder -Include $video_masks -File -Recurse -Force `
-            | ? { !$($f = $_; $dirs_arr | % { $f.FullName.StartsWith($_) | ? { $_ } }) } `
-            | select -First $Limit
+            | ? { !$($f = $_; $dirs_arr | % { $f.FullName.StartsWith($_) | ? { $_ } }) }
             #          | ? {
             #            $f = $_
             #            $include = $true
@@ -576,21 +577,29 @@ function Create-KodiMoviesNfo {
             $dirs
             
           } else {
-            dir $Folder -Include $video_masks -File -Recurse -Force | select -First $Limit
+            dir $Folder -Include $video_masks -File -Recurse -Force
           }
           
         } elseif ($ContentType -eq 'TVShow') {
           ### Только каталоги с видеофайлами:
           #$video_masks = @("*.mkv", "*.mp4")
-          dir $Folder -Directory -Force | ? {
+          dir $Folder -Directory -Recurse -Force | ? {
             ### Если в имени будут скобки [], надо экранировать:
             $fn = [System.Management.Automation.WildcardPattern]::Escape($_.FullName)
             $video_masks | % { dir "$fn\$_" }
-          } | select -First $Limit
+          } | % {
+            if ($_.Name -match $season_dir_pattern) {
+              Write-Verbose "Create-KodiMoviesNfo: Found season folder: '$($_.FullName)'"
+              gi -LiteralPath $_.Parent.FullName
+            } else {
+              Write-Verbose "Create-KodiMoviesNfo: Found TVShow folder: '$($_.FullName)'"
+              $_
+            }
+          }
           #      dir $Folder -Directory -Exclude $config.ExcludeFolders -Recurse | select -First $Limit
         } else {
           throw "NOT IMPLEMENTED: content type '$ContentType'"
-        }) | Sort-Object FullName
+        }) | Sort-Object FullName -Unique | ? { $_.Name -notmatch '^__' } | select -First $Limit
     )
     
     Write-Verbose "All items to process: $($items.Length) $($ContentType)(s):`r`n$($items.FullName -join "`r`n")"
@@ -627,6 +636,8 @@ function Create-KodiMoviesNfo {
         Directory = $(if ($item.PSIsContainer) { $item.FullName } else { $item.DirectoryName })
         ContentType = $ContentType
       }
+      
+#      Write-Host ("`r`n=== media_info:`r`n" + ($media_info | fl * -Force | Out-String).Trim()) -ForegroundColor 'Cyan'
       
       [ParsedName]$parsed_name = Parse-FileName -Name $item.Name -ContentType $ContentType
       $media_info.ParsedName = $parsed_name
