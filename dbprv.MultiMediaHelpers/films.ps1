@@ -1,5 +1,7 @@
 ﻿using namespace System.Collections.Generic
 
+Write-Verbose "Include script '$PSCommandPath'"
+
 ### Includes:
 #. "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\logging.ps1"
@@ -35,6 +37,7 @@ class ParsedName {
   [string]$Container
   [int]$Season
   [string]$SeasonSuffix
+  [List[string]]$Comments = [List[string]]::new()
 }
 
 class ExportKodiNfoResult {
@@ -112,6 +115,7 @@ $kodi_nfo_templates.Add('TVShow',
 
 #??? проверить: tagline = shortDescription !!! ломает сканирование
 
+$script:parsed_names_hints = @{ }
 
 ### Functions:
 
@@ -513,6 +517,66 @@ function Export-KodiNfo {
   return $result
 }
 
+### Костыль для неправильно определяющихся фильмов и сериалов
+### Для фильма: прочитать имя и год из файла mmh.txt в папке с фильмами
+### Для сериала: прочитать имя и год из файла mmh.txt в папке сериала      
+### Формат mmh.txt: имя файла/папки разделитель `t|; имя год
+function Get-ParsedInfoFromHintFile {
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]$Folder,
+    [string]$Name
+#    [MediaContentType]$ContentType
+  )
+  
+  Write-Verbose "Get-ParsedInfoFromHintFile: Folder: '$Folder', Name: '$Name'"
+  
+  if (!$script:parsed_names_hints.Count) {
+    $config = Get-Config
+    $path = Join-Path $Folder $config.HintFileName
+    Write-Verbose "Get-ParsedInfoFromHintFile: hints path: '$path'"
+    if (Test-Path $path -PathType Leaf) {
+      gc $path | % { "$_".Trim() } | ? { $_ } | % {
+        $k, $v = $_ -split "[`t|;]", 2
+        $script:parsed_names_hints[$k] = $v
+      }
+      Write-Verbose "$script:parsed_names_hints:`r`n$(($script:parsed_names_hints | Out-String).Trim())"
+    } else {
+      Write-Verbose "Get-ParsedInfoFromHintFile: hint file not found"
+      return
+    }    
+  }
+  
+  return $script:parsed_names_hints[$Name]
+  
+#  if ($ContentType -eq 'Movie') {
+#    
+#    
+#  } elseif ($ContentType -eq 'TVShow') {
+#    $mmh_file_path = Join-Path $item.FullName "mmh.txt"
+#    if (Test-Path -LiteralPath $mmh_file_path -PathType Leaf) {
+#      Write-Verbose "Create-KodiMoviesNfo: process file mmh.txt"
+#      $mmh_file_info = gc -LiteralPath $mmh_file_path -First 1
+#      [ParsedName]$parsed_name_from_mmh_file = Parse-FileName -Name $mmh_file_info -ContentType $ContentType
+#      
+#      
+#      if ($parsed_name_from_mmh_file) {
+#        if ($parsed_name_from_mmh_file.Name) {
+#          Write-Verbose "Create-KodiMoviesNfo: set parsed name from mmh file"
+#          $parsed_name.Name = $parsed_name_from_mmh_file.Name
+#        }
+#        if ($parsed_name_from_mmh_file.Year) {
+#          Write-Verbose "Create-KodiMoviesNfo: set parsed yaer from mmh file"
+#          $parsed_name.Year = $parsed_name_from_mmh_file.Year
+#        }
+#      }
+#    }
+#  }
+  
+  
+}
+
 ### Public function:
 function Create-KodiMoviesNfo {
   [CmdletBinding()]
@@ -637,32 +701,31 @@ function Create-KodiMoviesNfo {
         ContentType = $ContentType
       }
       
-#      Write-Host ("`r`n=== media_info:`r`n" + ($media_info | fl * -Force | Out-String).Trim()) -ForegroundColor 'Cyan'
+      #      Write-Host ("`r`n=== media_info:`r`n" + ($media_info | fl * -Force | Out-String).Trim()) -ForegroundColor 'Cyan'
       
       [ParsedName]$parsed_name = Parse-FileName -Name $item.Name -ContentType $ContentType
       $media_info.ParsedName = $parsed_name
       
-      ### Костыль для неправильно определяющихся сериалов
-      ### Прочитать имя и год из файла mmh.txt в папке сериала
-      if ($ContentType -eq 'TVShow') {
-        $mmh_file_path = Join-Path $item.FullName "mmh.txt"
-        if (Test-Path -LiteralPath $mmh_file_path -PathType Leaf) {
-          Write-Verbose "Create-KodiMoviesNfo: process file mmh.txt"
-          $mmh_file_info = gc -LiteralPath $mmh_file_path -First 1
-          [ParsedName]$parsed_name_from_mmh_file = Parse-FileName -Name $mmh_file_info -ContentType $ContentType
-          if ($parsed_name_from_mmh_file) {
-            if ($parsed_name_from_mmh_file.Name) {
-              Write-Verbose "Create-KodiMoviesNfo: set parsed name from mmh file"
-              $parsed_name.Name = $parsed_name_from_mmh_file.Name
-            }
-            if ($parsed_name_from_mmh_file.Year) {
-              Write-Verbose "Create-KodiMoviesNfo: set parsed yaer from mmh file"
-              $parsed_name.Year = $parsed_name_from_mmh_file.Year
-            }
+      ### Костыль для неправильно определяющихся фильмов и сериалов
+      ### Для фильма: прочитать имя и год из файла mmh.txt в папке с фильмами
+      ### Для сериала: прочитать имя и год из файла mmh.txt в папке сериала      
+      $hint_result = Get-ParsedInfoFromHintFile -Folder $Folder -Name $item.Name
+      if ($hint_result) {
+        [ParsedName]$parsed_name_from_hint_file = Parse-FileName -Name $hint_result -ContentType $ContentType
+        if ($parsed_name_from_hint_file) {
+          if ($parsed_name_from_hint_file.Name) {
+            Write-Verbose "Create-KodiMoviesNfo: set parsed name from hint file"
+            $parsed_name.Name = $parsed_name_from_hint_file.Name
+            $parsed_name.Comments.Add("Name from hint file")
           }
-        }
+          ### Иногда на Кинопоиске попадаются фильмы/сериалы без года
+          #          if ($parsed_name_from_hint_file.Year) {
+            Write-Verbose "Create-KodiMoviesNfo: set parsed yaer from hint file"
+            $parsed_name.Year = $parsed_name_from_hint_file.Year
+            $parsed_name.Comments.Add("Year from hint file")
+#          }
+        }        
       }
-      
       
       # !!! -EnumsAsStrings - no in PS5
       Write-Verbose ("`r`n=== media_info:`r`n" + ($media_info | ConvertTo-Json -Depth 5 | Out-String).Trim())

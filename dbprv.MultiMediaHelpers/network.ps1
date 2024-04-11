@@ -1,4 +1,6 @@
-﻿#using namespace System.Collections.Generic
+﻿Write-Verbose "Include script '$PSCommandPath'"
+
+#using namespace System.Collections.Generic
 
 ### Includes:
 . "$PSScriptRoot\cache.ps1"
@@ -121,7 +123,7 @@ function Get-UrlContent {
   Write-Verbose "Get-UrlContent: invoke web request to get result"
   
   ### Игнорирует -ErrorAction, поэтому в try-catch:
-  $response = Invoke-WebRequest -Uri $full_url -Headers $Headers @params
+  $response = Invoke-WebRequest -Uri $full_url -Headers $Headers -TimeoutSec 30 @params
   $network_stat.InvokeWebRequestCount++
   if ($cache_enabled) {
     Save-TextToCache -Key $cache_key -Text $response.Content -FileExtension $ext

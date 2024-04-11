@@ -28,6 +28,7 @@ Describe 'Parse-FileName(movie)' {
     @{ file_name = '16-й_WEBRip_(1080p).mkv'; expected_name = '16-й' }
     @{ file_name = 'Serdce.parmy.2022.WEB-DL.1080.mkv'; expected_name = 'Serdce parmy' }
     @{ file_name = 'The.Matrix.1999.UHD.2160p.HEVC.TrueHD.Atmos.7.1.RusATMOS.ru'; expected_name = 'The Matrix' }
+    @{ file_name = 'Дюна. ч.1 (2021) 4K Atmos.mkv'; expected_name = 'Дюна' }
     
   ) {
     $result = Parse-FileName -Name $file_name -ContentType Movie
@@ -94,6 +95,20 @@ $(($result.Tokens | ft * -AutoSize | Out-String).Trim())
   }
 }
 
+
+Describe 'Get-ParsedInfoFromHintFile' {
+  It 'string: [<string>], expected: [<expected>]' -ForEach @(
+    @{ folder = 'hints'; name = 'Дюна. ч.1 (2021) 4K Atmos.mkv'; expected = 'Дюна 2021' }
+    @{ folder = 'hints'; name = 'Mike.Judges.Beavis.and.Butt-Head.S01.1080p.TVShows'; expected = 'Бивис и Батт-Хед 2022' }
+  ) {
+    $folder = Join-Path $test_data_root $folder
+    $result = Get-ParsedInfoFromHintFile -Folder $folder -Name $name
+    Write-Verbose "result: [$result]"
+    $result | Should -Be $expected
+  }
+}
+
+
 Describe 'Create-KodiMoviesNfo' {
   It 'folder: [<folder>], countries_any: [<countries_any>], limit: [<limit>]' -ForEach @(
     ### Фильмы:
@@ -101,13 +116,13 @@ Describe 'Create-KodiMoviesNfo' {
     #  @{ folder = 'H:\Video\Россия'; type = 'Movie'; countries_any = @('Россия', 'Беларусь', 'Казахстан'); limit = 333 }
     #  @{ folder = 'H:\Video\Детское'; type = 'Movie'; countries_any = @(); limit = 333 }
     # @{ folder = 'H:\Video\HighQuality'; type = 'Movie'; countries_any = @(); limit = 333 }
-    #  @{ folder = 'H:\video_test\movies'; type = 'Movie'; countries_any = @(); limit = 3 }
+      # @{ folder = 'H:\video_test\movies'; type = 'Movie'; countries_any = @(); limit = 3 }
      
     ### Сериалы:
     # @{ folder = 'H:\Video\Сериалы'; type = 'TVShow'; countries_any = @(); limit = 333 }
-     @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
+#     @{ folder = 'H:\Video\Сериалы2'; type = 'TVShow'; countries_any = @(); limit = 333 }
     #  @{ folder = 'H:\Video\Аниме'; type = 'TVShow'; countries_any = @(); limit = 333 }
-    # @{ folder = 'H:\video_test\tvshows'; type = 'TVShow'; countries_any = @(); limit = 333 }
+    @{ folder = 'H:\video_test\tvshows'; type = 'TVShow'; countries_any = @(); limit = 333 }
     
   ) {
     $result = Create-KodiMoviesNfo -Folder $folder -Limit $limit -CountriesAny $countries_any -ContentType $type -SaveInfo

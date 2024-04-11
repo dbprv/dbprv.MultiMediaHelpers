@@ -1,4 +1,5 @@
 WorkingDirectory: D:\mmh
+HintFileName: mmh.txt
 
 Logging:
   Directory: '{config:WorkingDirectory}\logs'
@@ -28,6 +29,7 @@ FileNameTokens:
     - 720p
     - 1080p
     - 2160p
+    - 4K
   Sound:
     - DD.5.1
     - DDP5.1

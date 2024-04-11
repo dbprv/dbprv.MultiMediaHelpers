@@ -1,4 +1,6 @@
-﻿### Includes:
+﻿Write-Verbose "Include script '$PSCommandPath'"
+
+### Includes:
 #. "$PSScriptRoot\common.ps1"
 
 

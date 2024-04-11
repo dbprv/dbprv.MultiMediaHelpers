@@ -1,4 +1,7 @@
-﻿# 1.3.0
+﻿# 1.4.0
+- Hints file 'mmh.txt' for incorrectly detected movies, tvshows
+
+# 1.3.0
 - Export Kodi info to CSV
 - Find TMDB by IMDB ID
 - Find trailer on Youtube if no trailer on TMDB
