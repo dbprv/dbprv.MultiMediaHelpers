@@ -132,8 +132,8 @@ tvshow name year
 - https://www.reddit.com/r/tinyMediaManager \
   https://www.tinymediamanager.org \
   https://gitlab.com/tinyMediaManager/tinyMediaManager \
-  starts 196
+  stars 196
 
 - Ember Media Manager https://forum.kodi.tv/forumdisplay.php?fid=195 \
   https://github.com/DanCooper/Ember-MM-Newscraper \
-  last chages - 2 years ago
+  last changes - 2 years ago
