@@ -28,8 +28,10 @@ $kinopoisk_content_types = @{
 }
 
 $kinopoisk_country_languages = @{
-  'Россия' = 'ru'
-  'США'    = 'en'
+  'Россия'  = 'ru'
+  'США'     = 'en'
+  'Франция' = 'fr'
+  'Испания' = 'es'
 }
 
 ### Functions:
@@ -109,7 +111,7 @@ function Find-KinopoiskMovie {
       $countries = @($_.countries.name | % { "$_".Trim() } | ? { $_ })
       foreach ($country in $countries) {
         if ($kinopoisk_country_languages.ContainsKey($country)) {
-          $original_language = $kinopoisk_country_languages[$country]          
+          $original_language = $kinopoisk_country_languages[$country]
           break
         }
       }

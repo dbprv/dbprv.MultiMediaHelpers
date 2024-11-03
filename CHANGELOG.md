@@ -1,5 +1,11 @@
-﻿# 1.4.0
+﻿# 1.5.1
+- Fix kp_search.Result.externalId is null
+
+# 1.5.0
 - Hints file 'mmh.txt' for incorrectly detected movies, tvshows
+
+# 1.4.0
+- Process BD, DVD disc rips
 
 # 1.3.0
 - Export Kodi info to CSV

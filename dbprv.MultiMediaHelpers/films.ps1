@@ -791,6 +791,11 @@ function Create-KodiMoviesNfo {
                   Write-Host "TMDB result:`r`n$($tmdb_search.Result | select id, title, name, original_title, original_name, original_language, release_date, year | ft -AutoSize | Out-String)" -fo Cyan
                   $tmdb_id = $tmdb_search.Result.id
                   $media_info.TMDB.Search = $tmdb_search.Result
+                  
+                  if ($kp_search.Result.externalId -eq $null) {
+                    $kp_search.Result.externalId = [PSCustomObject]@{ }                    
+                  }
+                  
                   Add-Member -InputObject $kp_search.Result.externalId -MemberType NoteProperty -Name tmdb -Value $tmdb_id -Force
                   break
                 } else {
